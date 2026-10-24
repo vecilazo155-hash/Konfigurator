@@ -1,0 +1,6 @@
+/* WoodPlast 3D konfigurátor – service worker: offline kópia stránky a knižnice 3D. Nahrajte ako sw.js do rovnakého priečinka ako konfigurátor. */
+var CACHE='wp3d-v1', ASSETS=[location.pathname.replace(/sw\.js$/,''), location.pathname.replace(/sw\.js$/,'index.html'), 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'];
+self.addEventListener('install', function(e){ e.waitUntil(caches.open(CACHE).then(function(c){ return Promise.all(ASSETS.map(function(u){ return c.add(u).catch(function(){}); })); }).then(function(){ return self.skipWaiting(); })); });
+self.addEventListener('activate', function(e){ e.waitUntil(caches.keys().then(function(ks){ return Promise.all(ks.filter(function(k){ return k!==CACHE; }).map(function(k){ return caches.delete(k); })); }).then(function(){ return self.clients.claim(); })); });
+self.addEventListener('fetch', function(e){ var r=e.request; if(r.method!=='GET') return; if(/hook\.|make\.com|webhook/i.test(r.url)) return;
+  e.respondWith(fetch(r).then(function(res){ if(res&&res.ok&&(r.url.indexOf(self.location.origin)===0||/cdnjs|fonts\./.test(r.url))){ var cp=res.clone(); caches.open(CACHE).then(function(c){ c.put(r, cp); }); } return res; }).catch(function(){ return caches.match(r, {ignoreSearch:true}).then(function(m){ return m||caches.match(ASSETS[1]); }); })); });
