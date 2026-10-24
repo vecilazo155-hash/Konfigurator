@@ -1,6 +1,6 @@
 # WoodPlast 3D konfigurátor – hosting
 
-Verejná adresa: **https://vecilazo155-hash.github.io/konfigurator/**  
+Verejná adresa: **https://vecilazo155-hash.github.io/Konfigurator/**  
 (po nastavení DNS aj **https://konfigurator.woodplast.sk/**)
 
 Na stránku woodplast.sk sa vkladá cez `<iframe>` – hotový kód je v `embed-priklad.html`.
