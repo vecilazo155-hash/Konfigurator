@@ -879,6 +879,15 @@ html.embed header.top{display:none}html.embed .app{min-height:auto}
 .sbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}.sbt{height:10px;background:var(--soft);border-radius:999px;overflow:hidden}.sbt i{display:block;height:100%;background:var(--accent);border-radius:999px}
 .sbar b{font-variant-numeric:tabular-nums;white-space:nowrap}.spark{display:flex;align-items:flex-end;gap:2px;height:70px;margin-top:4px}.spark i{flex:1;min-width:3px;background:var(--accent);border-radius:2px 2px 0 0;opacity:.85}
 .statshelp{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 18px;font-size:14px;line-height:1.55}.statshelp h2{margin:0 0 8px;font-size:17px}.statshelp code{background:var(--soft);padding:1px 5px;border-radius:5px;font-size:12px}
+html.widget header.top,html.widget aside.panel,html.widget .pricebar,html.widget .stage-tools,html.widget .stage-foot,html.widget .stepbadge,html.widget .touchhint,html.widget .stage-bars,html.widget .mini3d-bar,html.widget .toast{display:none!important}
+html.widget,html.widget body{height:100%;overflow:hidden}html.widget .app{display:block;height:100%}html.widget .main{display:block;position:relative;height:100%}
+html.widget .stage{position:absolute!important;inset:0;height:auto!important;min-height:0;box-shadow:none}html.widget #view{bottom:0;height:100%}
+.wglab{position:absolute;left:12px;top:12px;z-index:3;background:rgba(255,255,255,.92);color:#2D2A26;border-radius:10px;padding:6px 10px;font-size:13px;font-weight:600;pointer-events:none}
+.wgbar{position:absolute;left:12px;right:12px;bottom:12px;z-index:3;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;pointer-events:none}.wgbar>*{pointer-events:auto}
+.wgsw{display:flex;gap:6px;background:rgba(255,255,255,.92);padding:6px;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,.15);max-width:100%;overflow-x:auto;scrollbar-width:none}
+.wgsw button{width:34px;height:34px;flex:none;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.12);background-size:cover;cursor:pointer;padding:0}.wgsw button[aria-pressed="true"]{border-color:#2D2A26}
+.wgcta{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:15px;padding:12px 18px;border-radius:999px;text-decoration:none;box-shadow:0 6px 20px rgba(0,0,0,.15);white-space:nowrap}
+.ppin{max-width:900px}.pprow{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:8px 0 12px}.pprow .f{flex:1 1 180px}.ppsw .sw span{font-size:12px}
 </style>
 </head>
 <body>
@@ -1202,6 +1211,7 @@ html.embed header.top{display:none}html.embed .app{min-height:auto}
         <textarea id="videosIn" rows="4" style="width:100%;font-size:12px" placeholder="Pripraviť podklad = https://youtu.be/…&#10;Klásť dosky a klipy = https://youtu.be/…&#10;* = https://youtu.be/…"></textarea>
         <button type="button" class="btn-ghost" id="embedBtn" style="margin-top:10px;width:100%">Vložiť na web (embed)</button>
         <button type="button" class="btn-ghost" id="statsBtn" style="margin-top:10px;width:100%">Štatistiky (návštevy, konfigurácie, dopyty)</button>
+        <button type="button" class="btn-ghost" id="ppBtn" style="margin-top:10px;width:100%">Produktové stránky (3D model + Nakonfigurovať)</button>
         <button type="button" class="btn-ghost" id="resetRules" style="margin-top:10px;width:100%">Obnoviť pravidlá z cenníka</button>
       </details>
 
@@ -1314,6 +1324,10 @@ html.embed header.top{display:none}html.embed .app{min-height:auto}
 <section class="planview" id="embedView" hidden aria-labelledby="embedTitle">
   <div class="planbar"><button type="button" class="backlink" id="embedBack"><span aria-hidden="true">←</span> Späť na konfigurátor</button></div>
   <div class="planin embedin"><h1 id="embedTitle">Vloženie konfigurátora na woodplast.sk</h1><div id="embedIn"></div></div>
+</section>
+<section class="planview" id="ppView" hidden aria-labelledby="ppTitle">
+  <div class="planbar"><button type="button" class="backlink" id="ppBack"><span aria-hidden="true">←</span> Späť na konfigurátor</button></div>
+  <div class="planin ppin"><h1 id="ppTitle">Produktové stránky – 3D model a tlačidlo „Nakonfigurovať“</h1><div id="ppIn"></div></div>
 </section>
 <section class="planview" id="statsView" hidden aria-labelledby="statsTitle">
   <div class="planbar"><button type="button" class="backlink" id="statsBack"><span aria-hidden="true">←</span> Späť na konfigurátor</button></div>
@@ -6273,7 +6287,7 @@ function embedSnippet(){
   src+=(src.indexOf('?')>=0?'&':'?')+'embed=1';
   return '<!-- WoodPlast 3D konfigurátor – vloženie na stránku -->\n'
     +'<iframe id="wp3d" src="'+src+'" title="3D konfigurátor WoodPlast" style="width:100%;min-height:900px;border:0;display:block" allow="camera; xr-spatial-tracking; clipboard-write; web-share" loading="lazy"></iframe>\n'
-    +'<script>\n(function(){\n  var f=document.getElementById("wp3d");\n  if(/^#k=/.test(location.hash)) f.src=f.src.split("#")[0]+location.hash; /* odkaz na konfiguráciu zo stránky webu */\n  window.addEventListener("message", function(e){\n    var d=e.data; if(!d||d.type!=="wp3d") return;\n'
+    +'<script>\n(function(){\n  var f=document.getElementById("wp3d");\n  if(/^#(k|p)=/.test(location.hash)) f.src=f.src.split("#")[0]+location.hash; /* odkaz na konfiguráciu (#k=) alebo produkt a dekor (#p=) zo stránky webu */\n  window.addEventListener("message", function(e){\n    var d=e.data; if(!d||d.type!=="wp3d") return;\n'
     +'    if(d.event==="height"||d.event==="ready"){ if(d.data&&d.data.height) f.style.height=Math.max(700, d.data.height)+"px"; }\n'
     +'    if(d.event==="inquiry"){ /* dopyt odišiel – napr. meranie konverzie alebo CRM */\n      try{ window.dataLayer=window.dataLayer||[]; window.dataLayer.push({event:"wp3d_inquiry", product:d.data.product, total:d.data.total, priced:d.data.priced}); }catch(x){}\n    }\n'
     +'    if(d.event==="config"){ /* d.data: {code, title, total, product, link} – napr. uložiť do session */ }\n  });\n'
@@ -7471,7 +7485,7 @@ function renderOffer(){
    nie je krok, ktorý nič nespraví. Záznam preberá adresu konfigurátora, preto sa pred ním uloží zmena, ktorej autosave ešte čaká (changeUnsaved) –
    pri chránenom koncepte by inak adresa #k= niesla konfiguráciu spred nej a obnovenie stránky by pohľad otvorilo pre ňu.
    fromHistory: otvára sa záznam, ktorý už v histórii je – nový sa nepridá */
-var VIEWS=['planView','offerView','photoView','swatchView','hdView','cmpView','embedView','advView','guideView','statsView'];
+var VIEWS=['planView','offerView','photoView','swatchView','hdView','cmpView','embedView','advView','guideView','statsView','ppView'];
 function viewsOpen(){ return VIEWS.some(function(id){ var el=$(id); return !!el&&!el.hidden; }); }
 function showView(id, fromHistory){ var was=viewsOpen(), add=!was&&!fromHistory; if(add&&changeUnsaved()) autosaveNow();
   $(id).hidden=false; $(id).scrollTop=0; syncInert(); embedPost('view',{view:id}); if(add){ try{ history.pushState({wpView:id},''); }catch(e){} } }
@@ -7480,7 +7494,7 @@ function openPlan(fromHistory){ renderPlan(); showView('planView', fromHistory==
 /* popstate (a obnovenie stránky s konfiguráciou z #k=): záznam plánu či ponuky (history.state.wpView) ho otvorí, iný záznam otvorený pohľad zavrie */
 function viewFromHistory(){
   var v=null; try{ v=history.state&&history.state.wpView; }catch(e){}
-  if(VIEWS.indexOf(v)>=0&&!document.querySelector('.main').hidden){ if($(v).hidden){ hideViews(); if(v==='planView') openPlan(true); else if(v==='photoView') openPhoto(true); else if(v==='swatchView') openSwatch(true); else if(v==='hdView') openHd(); else if(v==='cmpView') openCmp(true); else if(v==='embedView') openEmbed(true); else if(v==='statsView') statsOpen(true); else if(v==='advView') openAdvisor(true); else if(v==='guideView') guideOpen(); else openOffer(true); } return; }
+  if(VIEWS.indexOf(v)>=0&&!document.querySelector('.main').hidden){ if($(v).hidden){ hideViews(); if(v==='planView') openPlan(true); else if(v==='photoView') openPhoto(true); else if(v==='swatchView') openSwatch(true); else if(v==='hdView') openHd(); else if(v==='cmpView') openCmp(true); else if(v==='embedView') openEmbed(true); else if(v==='statsView') statsOpen(true); else if(v==='ppView') ppOpen(true); else if(v==='advView') openAdvisor(true); else if(v==='guideView') guideOpen(); else openOffer(true); } return; }
   hideViews();
 }
 function closeViews(){ if(history.state&&history.state.wpView){ history.back(); return; } hideViews(); }
@@ -9282,7 +9296,7 @@ function lnFitDist(Wm,Hm){
   var o=three.orbit, LB=lnLabels(Wm,Hm), sx=1.3*LB.k, sy=0.49*LB.k, pts=[[-0.3,0,0.6],[Wm+0.15,0,0.6],[-0.3,0.12+Hm+0.25,0.6],[Wm+0.15,0.12+Hm+0.25,0.6]];
   return fitDist(pts.concat(spritePts(LB.w,sx,sy,o), spritePts(LB.h,sx,sy,o)), o, 0.92);
 }
-function fitCamera(){ if(!three||view3DBad()) return; fitCamera0(); camToolbarShift(); }
+function fitCamera(){ if(!three||view3DBad()) return; fitCamera0(); camToolbarShift(); widgetZoom(); }
 /* mobil: prepínače pohľadu zakrývajú hornú časť nízkej 3D plochy (~45 z 250 px) – model sa zarámuje do zvyšku pod nimi (o toľko ďalej a posunutý
    nadol), aby štítky stien, úsekov a kóty nad modelom neboli pod prepínačmi; snímka pre ponuku (three.snap) prepínače nemá */
 function camToolbarFrac(){
@@ -10331,7 +10345,7 @@ function recalc(sync){
   if(r===WARM_YIELD){ calcBusy(true); warmNext(); return; }
   calcBusy(false);
   if(!sync&&r.err&&!r.fatal&&!r.gate&&TYPED&&document.activeElement===TYPED){ HELD=true; last=r; autosave(); return; }
-  HELD=false; renderSummary(r); build3D(r); last=r; offerImgRetry(); autosave(); matCmpSync(); renderSection(); renderMap(); renderUneven(); montEstRender(r); embedConfigPost(r); woodCmpSync(); anDirty();
+  HELD=false; renderSummary(r); build3D(r); last=r; offerImgRetry(); autosave(); matCmpSync(); renderSection(); renderMap(); renderUneven(); montEstRender(r); embedConfigPost(r); woodCmpSync(); anDirty(); if(isWidget()) widgetRender();
 }
 function calcStep(){ WARM=2; try{ return calc(); }catch(e){ if(e===WARM_YIELD) return e; throw e; }finally{ WARM=0; } }
 /* ďalší krok až po vykreslení snímky (rAF a potom úloha), aby sa ukázalo „Počítam…“ a prehliadač medzi behmi reagoval */
@@ -10391,7 +10405,7 @@ function bind(){
   $('openPlan').addEventListener('click',function(){ if(!actBlocked()) openPlan(); });
   $('openOffer').addEventListener('click',function(){ if(!actBlocked()) openOffer(); });
   $('matCompare').addEventListener('click',matCmpToggle);
-  bindPhoto(); bindExtras(); bindThreeX(); bindTerrX(); bindBatch2(); bindBatch3(); bindPoly(); bindBatch4(); bindBatch5(); i18nInit(); bindStats();
+  bindPhoto(); bindExtras(); bindThreeX(); bindTerrX(); bindBatch2(); bindBatch3(); bindPoly(); bindBatch4(); bindBatch5(); i18nInit(); bindStats(); bindWidget();
   /* ponuka nástrojov nad 3D: otvorí sa čipom, zavrie klikom mimo, Escape alebo voľbou */
   (function(){ var b=$('smenuBtn'), m=$('smenu'); if(!b||!m) return;
     var close=function(){ m.hidden=true; b.setAttribute('aria-expanded','false'); };
@@ -10560,7 +10574,10 @@ bind(); fillCityList(); renderRules(); loadThree(); fitCamera(); update(); rende
 if(texLoad()) texReady(); else document.addEventListener('DOMContentLoaded', function(){ if(texLoad()) texReady(); });
 /* odkaz #k=: uložený koncept produktu sa neprepíše bez opýtania (applyConfig → draftDetach), odkaz z adresy zmizne po uložení (syncHash).
    #terasa/#fasada…: rozpracovaná práca produktu (koncept), inak predvolené hodnoty. fromLink: konfigurácia na obrazovke je z adresy #k= */
-var fromLink=(function(){ var h=location.hash.replace('#',''); if(h.indexOf('k=')===0){ var o=decodeConfig(h.slice(2)); if(o){ applyConfig(o); return true; } } if(own(HASH_PROD,h)) openWork(HASH_PROD[h],false); return false; })();
+var fromLink=(function(){ var h=location.hash.replace('#',''); if(h.indexOf('k=')===0){ var o=decodeConfig(h.slice(2)); if(o){ applyConfig(o); return true; } }
+  var pre=urlPreset(); if(pre){ try{ presetApply(pre); return false; }catch(e){} }
+  if(own(HASH_PROD,h)) openWork(HASH_PROD[h],false); else if(isWidget()) openWork('terrace', false); return false; })();
+widgetInit();
 if(!document.querySelector('.main').hidden) CFG_HASH=location.hash;
 /* obnovenie stránky pri otvorenom pláne montáže či cenovej ponuke (záznam s wpView): pohľad sa znova otvorí pre konfiguráciu na obrazovke – tú
    pohľad ukazoval (showView pred svojím záznamom adresu zosúladí): z adresy #k=, pri #terasa/#fasada… uložená práca produktu (adresa produktu
@@ -10935,6 +10952,135 @@ function bindStats(){
   var b=$('statsBtn'); if(b) b.addEventListener('click', function(){ statsOpen(); }); var bk=$('statsBack'); if(bk) bk.addEventListener('click', closeViews);
   anInit();
 }
+
+/* ---------- Predvolená konfigurácia z adresy (?p=terasa&decor=dub&mat=…, alebo #p=…) a režim widget (?widget=1) ----------
+   Odkazy z produktových stránok a reklám otvoria konfigurátor rovno s produktom, materiálom a dekorom (bez uloženého konceptu).
+   Widget: iba 3D model (bez panelu a hlavičky) s pomalým obletom, prepínačom dekorov a tlačidlom „Nakonfigurovať“ – vkladá sa na
+   produktové stránky webu cez iframe (kód generuje panel ?obchod → Produktové stránky). */
+function isWidget(){ return /[?&]widget(=|&|$)/.test(location.search); } /* funkcia – widgetInit() beží skôr, než by sa stihla premenná na konci skriptu naplniť */
+function urlPreset(){
+  var q=null, hp=null; try{ q=new URLSearchParams(location.search); var h=location.hash.replace(/^#/,''); if(h.indexOf('p=')===0) hp=new URLSearchParams(h); }catch(e){ return null; }
+  var g=function(k){ return (hp&&hp.get(k))||(q&&q.get(k))||''; }, p=g('p');
+  var AL={terasa:'terrace', fasada:'facade', plot:'fence', slnolamy:'louvers', interier:'interior'}; if(AL[p]) p=AL[p];
+  if(!own(PROD_NAMES,p)) return null;
+  return {p:p, decor:g('decor'), mat:g('mat'), shape:g('shape'), a:parseInt(g('a'),10)||0, b:parseInt(g('b'),10)||0};
+}
+/* nastaví materiál a dekor produktu (bez prepočtu) – spoločné pre odkaz z adresy aj generátor obrázkov */
+function presetFields(p, m, d, o){
+  o=o||{};
+  try{
+    if(p==='terrace'){ if(m&&TER_MATS[m]) state.matType=m; var cs=matColors(); if(d&&cs.some(function(x){ return x.id===d; })){ state.decor=d; TER_DECPREF=d; }
+      if(o.shape&&SHAPES[o.shape]&&o.shape!=='poly') state.shape=o.shape; if(o.a>=100&&o.a<=2000) state.A=o.a; if(o.b>=100&&o.b<=2000) state.B=o.b; }
+    else if(p==='facade'){ if(m&&FA_MAT[m]) fa.mat=m; if(d&&FA_MAT[fa.mat].colors.indexOf(d)>=0){ fa.color=d; FA_COLPREF=d; } }
+    else if(p==='fence'){ if(m==='deck'||m==='lamel') fe.type=m; if(d&&feDecors().some(function(x){ return x.id===d; })) fe.decor=d; }
+    else if(p==='louvers'){ if(d&&LN_DECORS.some(function(x){ return x.id===d; })) ln.decor=d; }
+    else if(p==='interior'){ if(m&&IN_MAT[m]) iw.mat=m; if(d&&inMat().decors.some(function(x){ return x.id===d; })) iw.decor=d; }
+  }catch(e){}
+}
+function presetApply(o){ resetProduct(o.p); presetFields(o.p, o.mat, o.decor, o); openProduct(o.p, false, false); draftDetach(); }
+function widgetLink(){
+  var el=(WPC&&typeof WPC.embedLink==='string')?WPC.embedLink.trim():'', code=encodeConfig();
+  if(/^https?:/.test(el)) return el.split('#')[0]+'#k='+code;
+  var u=location.href.split('#')[0].replace(/([?&])widget(=[^&]*)?/, '$1').replace(/[?&]+$/,'').replace(/\?&/,'?');
+  return u+'#k='+code;
+}
+function widgetInit(){
+  if(!isWidget()) return; document.documentElement.classList.add('widget');
+  var st=document.querySelector('.stage'); if(!st) return;
+  var lab=document.createElement('div'); lab.className='wglab'; lab.id='wgLab'; st.appendChild(lab);
+  var bar=document.createElement('div'); bar.className='wgbar'; bar.innerHTML='<div class="wgsw" id="wgSw" role="group" aria-label="Dekor"></div><a class="wgcta" id="wgCta" target="_top" rel="noopener">Nakonfigurovať <span aria-hidden="true">→</span></a>'; st.appendChild(bar);
+  $('wgCta').addEventListener('click', function(){ $('wgCta').href=widgetLink(); anTrack('widget_cta', {product:state.product}); });
+  var cv=$('view'); if(cv) cv.addEventListener('pointerdown', function(){ if(ORB.on) orbitSet(false); }, {passive:true});
+  widgetRender(); orbitSet(true); if(three) three.autoRotSpeed=0.0025;
+  /* okolie (nábytok, osoba, stromy) – produktová fotka pôsobí živšie */
+  ENV.on=true; menuPressed('venv', true); try{ envBuild(); }catch(e){}
+  anTrack('widget', {product:state.product});
+}
+/* widget: bližší záber (bez panela a nápovedy ostáva okolo modelu veľa miesta) */
+function widgetZoom(){ if(!isWidget()||!three||three.snap) return; three.orbit.r*=0.8; three.fitR=three.orbit.r; }
+function widgetRender(){
+  if(!isWidget()) return; var sw=$('wgSw'), lab=$('wgLab'), cta=$('wgCta'); if(!sw) return;
+  var D=decorList();
+  sw.innerHTML=D.list.map(function(d){ return '<button type="button" data-wgd="'+esc(d.id)+'" title="'+esc(d.name)+'" aria-label="'+esc(d.name)+'" aria-pressed="'+(d.id===D.cur)+'" style="background:'+decorBg({id:d.id, c1:d.c1, c2:d.c1})+'"></button>'; }).join('');
+  sw.querySelectorAll('[data-wgd]').forEach(function(b){ b.addEventListener('click', function(){ D.set(b.dataset.wgd); if(three) three.autoRotSpeed=0.0025; widgetRender(); anTrack('widget_decor', {product:state.product, decor:b.dataset.wgd}); }); });
+  var cur=D.list.filter(function(d){ return d.id===D.cur; })[0];
+  lab.textContent=(pick(PROD_NAMES,state.product)||'')+(cur?' · '+cur.name:'')+(D.mat?' · '+D.mat:'');
+  cta.href=widgetLink();
+}
+
+/* ---------- Produktové stránky (panel ?obchod): kód 3D modelu + tlačidla „Nakonfigurovať“ pre každý dekor, obrázky (poster) ---------- */
+var PP={p:'terrace', m:'wpc', d:'', dir:'/konfigurator/img/'};
+function ppMats(p){
+  if(p==='terrace') return Object.keys(TER_MATS).map(function(k){ return {id:k, label:TER_MATS[k].label}; });
+  if(p==='facade') return Object.keys(FA_MAT).map(function(k){ return {id:k, label:FA_MAT[k].label}; });
+  if(p==='fence') return [{id:'lamel', label:'Lamelový plot 153 × 20 mm'},{id:'deck', label:'Plot z terasových dosiek'}];
+  if(p==='interior') return Object.keys(IN_MAT).map(function(k){ return {id:k, label:IN_MAT[k].label}; });
+  return [{id:'', label:'WPC slnolam 100 × 53 mm'}];
+}
+function ppDecors(p, m){
+  if(p==='terrace'){ var M=TER_MATS[m]||TER_MATS.wpc; return (M.colors||DECORS).map(function(d){ return {id:d.id, name:d.name, c1:d.c1}; }); }
+  if(p==='facade'){ return (FA_MAT[m]||FA_MAT['lamel-solo']).colors.map(function(c){ var C=FA_COL[c]||[c,'#999']; return {id:c, name:C[0], c1:C[1]}; }); }
+  if(p==='fence'){ return (m==='deck'?DECORS:FE_DECORS).map(function(d){ return {id:d.id, name:d.name, c1:d.c1}; }); }
+  if(p==='louvers') return LN_DECORS.map(function(d){ return {id:d.id, name:d.name, c1:d.c1}; });
+  if(p==='interior'){ return (IN_MAT[m]||IN_MAT.ak).decors.map(function(d){ return {id:d.id, name:d.name, c1:d.c1}; }); }
+  return [];
+}
+function ppBase(){ var self=location.href.split('#')[0].split('?')[0], el=(WPC&&typeof WPC.embedLink==='string')?WPC.embedLink.trim():''; return {app:self, page:/^https?:/.test(el)?el.split('#')[0]:''}; }
+function ppParams(p, m, d){ return 'p='+p+(m?'&mat='+encodeURIComponent(m):'')+(d?'&decor='+encodeURIComponent(d):''); }
+function ppImgName(p, m, d){ return 'wp3d-'+p+(m?'-'+m:'')+'-'+d+'.jpg'; }
+function ppSnippet(p, m, d, name){
+  var B=ppBase(), q=ppParams(p,m,d), src=B.app+'?widget=1&'+q, cta=B.page?B.page+'#'+q:B.app+'?'+q, img=PP.dir.replace(/\/?$/,'/')+ppImgName(p,m,d);
+  var PN=pick(PROD_NAMES,p)||p, acc={terrace:'terasu', facade:'fasádu', fence:'plot', louvers:'slnolamy', interior:'interiér'}[p]||PN.toLowerCase();
+  return '<!-- WoodPlast 3D – '+PN+' · '+name+' -->\n'
+    +'<div class="wp3d-prod" data-src="'+src+'" style="position:relative;aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:#E9ECE6 url(\''+img+'\') center/cover;cursor:pointer">\n'
+    +'  <button type="button" class="wp3d-play" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;color:#2D2A26;border:0;border-radius:999px;padding:12px 20px;font:600 15px Inter,Arial,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.2);cursor:pointer">▶ Pozrieť v 3D</button>\n'
+    +'</div>\n'
+    +'<a class="wp3d-cta" href="'+cta+'" style="display:inline-block;margin-top:12px;background:#AD8E6D;color:#2D2A26;font:700 15px Inter,Arial,sans-serif;padding:12px 20px;border-radius:999px;text-decoration:none">Nakonfigurovať '+acc+' – dekor '+name+'</a>';
+}
+var PP_SCRIPT='<script>\n(function(){\n  function load(el){ if(el.dataset.on) return; el.dataset.on=1; var f=document.createElement("iframe"); f.src=el.dataset.src; f.title="3D model WoodPlast"; f.setAttribute("allow","xr-spatial-tracking"); f.style.cssText="position:absolute;inset:0;width:100%;height:100%;border:0"; el.appendChild(f); var b=el.querySelector(".wp3d-play"); if(b) b.remove(); }\n  document.querySelectorAll(".wp3d-prod").forEach(function(el){ el.addEventListener("click", function(){ load(el); }); });\n})();\n<\/script>';
+function ppOpen(fromHistory){ PP.p=own(PROD_NAMES,state.product)?state.product:'terrace'; var ms=ppMats(PP.p); PP.m=ms[0].id; PP.d=''; ppRender(); showView('ppView', fromHistory===true); $('ppBack').focus(); }
+function ppRender(){
+  var box=$('ppIn'); if(!box) return; var ms=ppMats(PP.p); if(!ms.some(function(m){ return m.id===PP.m; })) PP.m=ms[0].id;
+  var ds=ppDecors(PP.p, PP.m); if(!ds.some(function(d){ return d.id===PP.d; })) PP.d=ds.length?ds[0].id:'';
+  var cur=ds.filter(function(d){ return d.id===PP.d; })[0]||{id:'', name:''};
+  var h='<p class="note">Na produktovú stránku webu vložíte 3D model produktu (otáča sa, dá sa prepínať dekor) a tlačidlo „Nakonfigurovať“, ktoré otvorí konfigurátor s týmto produktom a dekorom. Model sa načíta až po kliknutí na obrázok (poster), stránka ostane rýchla.</p>'
+    +'<div class="pprow"><label class="f"><span class="note">Produkt</span><select id="ppProd">'+['terrace','facade','fence','louvers','interior'].map(function(p){ return '<option value="'+p+'"'+(p===PP.p?' selected':'')+'>'+PROD_NAMES[p]+'</option>'; }).join('')+'</select></label>'
+    +'<label class="f"><span class="note">Materiál</span><select id="ppMat">'+ms.map(function(m){ return '<option value="'+esc(m.id)+'"'+(m.id===PP.m?' selected':'')+'>'+esc(m.label)+'</option>'; }).join('')+'</select></label>'
+    +'<label class="f" style="flex:1 1 240px"><span class="note">Priečinok s obrázkami na webe (poster)</span><input type="text" id="ppDir" value="'+esc(PP.dir)+'"></label></div>'
+    +'<div class="swatches ppsw" role="group" aria-label="Dekor">'+ds.map(function(d){ return '<button type="button" class="sw" data-ppd="'+esc(d.id)+'" aria-pressed="'+(d.id===PP.d)+'"><i style="background:'+decorBg({id:d.id, c1:d.c1, c2:d.c1})+'"></i><span>'+esc(d.name)+'</span></button>'; }).join('')+'</div>'
+    +'<h2 style="font-size:16px;margin:14px 0 6px">Kód pre '+esc(PROD_NAMES[PP.p])+' · '+esc(cur.name)+'</h2>'
+    +'<textarea id="ppCode" rows="9" readonly style="width:100%;font-size:11.5px;font-family:ui-monospace,Menlo,monospace">'+esc(ppSnippet(PP.p, PP.m, PP.d, cur.name))+'</textarea>'
+    +'<div class="exportbtns" style="margin-top:8px"><button type="button" class="chip" id="ppCopy">Kopírovať kód</button><button type="button" class="chip" id="ppCopyScript">Kopírovať skript (raz na stránku)</button><button type="button" class="chip" id="ppAll">Všetky dekory tohto materiálu (HTML)</button><button type="button" class="chip" id="ppImgs" data-dl-ui>Obrázky pre tento materiál (ZIP)</button><a class="chip" id="ppPreview" href="'+esc(ppBase().app+'?widget=1&'+ppParams(PP.p,PP.m,PP.d))+'" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">Náhľad widgetu ↗</a></div>'
+    +'<p class="note" id="ppMsg" style="margin-top:8px"></p>'
+    +'<details style="margin-top:10px"><summary class="note" style="cursor:pointer;font-weight:700">Ako to vložiť do WordPressu</summary><ol class="note" style="line-height:1.6"><li>Obrázky zo ZIP nahrajte na web do priečinka uvedeného vyššie (alebo cez Médiá a upravte adresy v kóde).</li><li>Do stránky produktu pridajte blok „Vlastné HTML“ a vložte kód dekoru (jeden blok na dekor, alebo celý zoznam cez „Všetky dekory“).</li><li>Skript vložte raz na stránku (na koniec, tiež blok „Vlastné HTML“) – načíta 3D model po kliknutí.</li><li>Tlačidlo „Nakonfigurovať“ vedie na stránku s konfigurátorom ('+(ppBase().page?esc(ppBase().page):'adresa konfigurátora – nastavte embedLink')+') a otvorí rovno tento produkt a dekor.</li></ol></details>';
+  box.innerHTML=h;
+  $('ppProd').addEventListener('change', function(){ PP.p=this.value; PP.m=ppMats(PP.p)[0].id; PP.d=''; ppRender(); });
+  $('ppMat').addEventListener('change', function(){ PP.m=this.value; PP.d=''; ppRender(); });
+  $('ppDir').addEventListener('change', function(){ PP.dir=this.value.trim()||'/konfigurator/img/'; ppRender(); });
+  box.querySelectorAll('[data-ppd]').forEach(function(b){ b.addEventListener('click', function(){ PP.d=b.dataset.ppd; ppRender(); }); });
+  $('ppCopy').addEventListener('click', function(){ copyText($('ppCode').value, function(ok){ $('ppMsg').textContent=ok?'Kód je skopírovaný.':'Skopírujte kód z poľa ručne.'; }); });
+  $('ppCopyScript').addEventListener('click', function(){ copyText(PP_SCRIPT, function(ok){ $('ppMsg').textContent=ok?'Skript je skopírovaný – vložte ho raz na koniec stránky.':'Skopírujte skript ručne.'; }); });
+  $('ppAll').addEventListener('click', function(){ var all=ds.map(function(d){ return ppSnippet(PP.p, PP.m, d.id, d.name); }).join('\n\n')+'\n\n'+PP_SCRIPT; copyText(all, function(ok){ $('ppMsg').textContent=ok?'Kód pre všetky dekory ('+ds.length+') je skopírovaný, vrátane skriptu.':'Nepodarilo sa skopírovať.'; }); });
+  $('ppImgs').addEventListener('click', ppImages);
+}
+/* obrázky (1600 × 900) pre všetky dekory zvoleného materiálu – postupne sa prepne dekor, počká na textúry a odfotí 3D; na konci sa vráti pôvodný stav */
+function ppImages(){
+  var msg=$('ppMsg'), btn=$('ppImgs'); if(!three||state.product!==PP.p){ msg.textContent='Najprv otvorte v konfigurátore produkt '+PROD_NAMES[PP.p]+' (obrázky sa fotia z 3D scény).'; return; }
+  var ds=ppDecors(PP.p, PP.m), keep=encodeConfig(), files=[], i=0, kw=SNAP_W, kh=SNAP_H, kl=SNAP_LAB, kq=SNAP_Q, envKeep=ENV.on; btn.disabled=true; ENV.on=true;
+  function b64bytes(u){ var b=atob(u.split(',')[1]), a=new Uint8Array(b.length); for(var j=0;j<b.length;j++) a[j]=b.charCodeAt(j); return a; }
+  function finish(){ ENV.on=envKeep; try{ var o=decodeConfig(keep); if(o) applyConfig(o); }catch(e){} btn.disabled=false;
+    if(!files.length){ msg.textContent='Obrázky sa nepodarilo vytvoriť.'; return; }
+    wpSave('wp3d-obrazky-'+PP.p+(PP.m?'-'+PP.m:'')+'.zip', zipStore(files), function(ok,m){ msg.textContent=(ok?'Hotovo – '+files.length+' obrázkov. ':'')+(m||''); }); }
+  function step(){
+    if(i>=ds.length){ finish(); return; }
+    var d=ds[i]; msg.textContent='Fotím '+(i+1)+' / '+ds.length+' – '+d.name+'…';
+    presetFields(PP.p, PP.m, d.id); update(); flushUpdate();
+    var tries=0; (function wait(){ if((three.texPending||0)>0&&tries++<30){ setTimeout(wait, 150); return; }
+      setTimeout(function(){ try{ SNAP_W=1600; SNAP_H=900; SNAP_LAB=48; SNAP_Q=0.88; var u=snapshot3D(false); if(u) files.push({name:ppImgName(PP.p,PP.m,d.id), data:b64bytes(u)}); }catch(e){} SNAP_W=kw; SNAP_H=kh; SNAP_LAB=kl; SNAP_Q=kq; i++; setTimeout(step, 60); }, 250); })();
+  }
+  step();
+}
+function bindWidget(){ var b=$('ppBtn'); if(b) b.addEventListener('click', function(){ ppOpen(); }); var bk=$('ppBack'); if(bk) bk.addEventListener('click', closeViews); }
 
 followUpOpen();
 })();

@@ -14,7 +14,7 @@
 <script>
 (function(){
   var f=document.getElementById("wp3d");
-  if(/^#k=/.test(location.hash)) f.src=f.src.split("#")[0]+location.hash; /* odkaz na konfiguráciu zo stránky webu */
+  if(/^#(k|p)=/.test(location.hash)) f.src=f.src.split("#")[0]+location.hash; /* odkaz na konfiguráciu (#k=) alebo produkt a dekor (#p=) zo stránky webu */
   window.addEventListener("message", function(e){
     var d=e.data; if(!d||d.type!=="wp3d") return;
     if(d.event==="height"||d.event==="ready"){ if(d.data&&d.data.height) f.style.height=Math.max(700, d.data.height)+"px"; }
