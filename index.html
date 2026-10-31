@@ -876,7 +876,7 @@ html.embed header.top{display:none}html.embed .app{min-height:auto}
 .kpi span{font-size:12px;color:var(--muted)}.kpi b{font-family:'Nunito',sans-serif;font-size:26px;letter-spacing:-.01em}
 .statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}.statcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 .statcard h3{margin:0 0 10px;font-size:14px}.sbar{display:grid;grid-template-columns:minmax(90px,38%) 1fr auto;gap:8px;align-items:center;font-size:13px;margin:5px 0}
-.sbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}.sbt{height:10px;background:var(--soft);border-radius:999px;overflow:hidden}.sbt i{display:block;height:100%;background:var(--accent);border-radius:999px}
+.stl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}.stt{height:10px;background:var(--soft);border-radius:999px;overflow:hidden}.stt i{display:block;height:100%;background:var(--accent);border-radius:999px}
 .sbar b{font-variant-numeric:tabular-nums;white-space:nowrap}.spark{display:flex;align-items:flex-end;gap:2px;height:70px;margin-top:4px}.spark i{flex:1;min-width:3px;background:var(--accent);border-radius:2px 2px 0 0;opacity:.85}
 .statshelp{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 18px;font-size:14px;line-height:1.55}.statshelp h2{margin:0 0 8px;font-size:17px}.statshelp code{background:var(--soft);padding:1px 5px;border-radius:5px;font-size:12px}
 html.widget header.top,html.widget aside.panel,html.widget .pricebar,html.widget .stage-tools,html.widget .stage-foot,html.widget .stepbadge,html.widget .touchhint,html.widget .stage-bars,html.widget .mini3d-bar,html.widget .toast{display:none!important}
@@ -888,6 +888,19 @@ html.widget .stage{position:absolute!important;inset:0;height:auto!important;min
 .wgsw button{width:34px;height:34px;flex:none;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.12);background-size:cover;cursor:pointer;padding:0}.wgsw button[aria-pressed="true"]{border-color:#2D2A26}
 .wgcta{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:15px;padding:12px 18px;border-radius:999px;text-decoration:none;box-shadow:0 6px 20px rgba(0,0,0,.15);white-space:nowrap}
 .ppin{max-width:900px}.pprow{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:8px 0 12px}.pprow .f{flex:1 1 180px}.ppsw .sw span{font-size:12px}
+@media (max-width: 900px){
+  .stage-bars{top:auto;bottom:54px;left:8px;right:8px;max-width:none}
+  html.steps3d .stage{height:60vh;height:60svh;min-height:320px}
+  .stagebar[data-bar="steps"]{padding:6px 10px 8px;gap:5px;border-radius:12px;background:rgba(255,255,255,.94)}
+  .stagebar[data-bar="steps"] .sbrow{gap:6px 8px}
+  .stagebar[data-bar="steps"] .sbrow b{font-size:13px}
+  .stagebar[data-bar="steps"] .sbv{font-size:12px}
+  .stagebar[data-bar="steps"] .sbx{width:30px;height:30px;font-size:20px}
+  .stagebar[data-bar="steps"] .sbrow:last-child{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .stagebar[data-bar="steps"] .sbrow:last-child::-webkit-scrollbar{display:none}
+  .stagebar[data-bar="steps"] .chip{min-height:34px;padding:0 10px;font-size:12.5px;white-space:nowrap;flex:none}
+}
+@media (max-width: 900px) and (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .stagebar[data-bar="steps"]{background:rgba(45,42,38,.94)} }
 </style>
 </head>
 <body>
@@ -5681,7 +5694,7 @@ function stepsTick(){
 }
 function stepsStart(){
   if(!three||!three.lastR||three.lastR.err){ toast('Postup montáže v 3D ukážeme, keď je zadanie bez chyby a 3D načítané.'); return; }
-  STP.on=true; three.stepsOn=true; menuPressed('vsteps', true);
+  STP.on=true; three.stepsOn=true; menuPressed('vsteps', true); document.documentElement.classList.add('steps3d');
   if(three.sub){ three.sub=false; var vs=$('vsub'); if(vs) vs.setAttribute('aria-pressed','false'); }
   build3D(three.lastR); stepsCollect(); STP.pos=0; STP.playing=true; clearTimeout(STP.timer);
   stageBar('steps', '<div class="sbrow"><b>Montáž po krokoch</b><span class="sbv" id="stpLbl"></span><button type="button" class="sbx" data-bar-close="steps" aria-label="Zavrieť">×</button></div>'
@@ -5693,7 +5706,7 @@ function stepsStart(){
   $('stpEnd').addEventListener('click',function(){ stepsEnd(); });
   stepsApply(); STP.timer=setTimeout(stepsTick, 400);
 }
-function stepsEnd(){ if(!STP.on) return; STP.on=false; STP.playing=false; clearTimeout(STP.timer); three.stepsOn=false; if(three.env) three.env.visible=true; menuPressed('vsteps', false); stageBarHide('steps'); if(three.lastR&&!three.lastR.err) build3D(three.lastR); redraw(); }
+function stepsEnd(){ if(!STP.on) return; STP.on=false; document.documentElement.classList.remove('steps3d'); STP.playing=false; clearTimeout(STP.timer); three.stepsOn=false; if(three.env) three.env.visible=true; menuPressed('vsteps', false); stageBarHide('steps'); if(three.lastR&&!three.lastR.err) build3D(three.lastR); redraw(); }
 function stepsAfterBuild(){ if(!three.stepsOn||!STP.on) return; stepsCollect(); if(STP.playing){ STP.pos=Math.min(STP.pos, STP.items.length); } else STP.pos=STP.items.length; stepsApply(); }
 
 /* ---------- Oblet kamery a video ----------
@@ -10917,7 +10930,7 @@ function statsLoad(url){
 }
 function statsBar(title, pairs, unit){
   var max=0; pairs.forEach(function(p){ max=Math.max(max,p[1]); }); if(!pairs.length) return '';
-  return '<div class="statcard"><h3>'+esc(title)+'</h3>'+pairs.slice(0,8).map(function(p){ var w=max?Math.round(p[1]/max*100):0; return '<div class="sbar"><span class="sbl">'+esc(p[0]||'–')+'</span><span class="sbt"><i style="width:'+w+'%"></i></span><b>'+(typeof p[1]==='number'&&unit==='€'?eur(p[1]):p[1])+(unit&&unit!=='€'?' '+unit:'')+'</b></div>'; }).join('')+'</div>';
+  return '<div class="statcard"><h3>'+esc(title)+'</h3>'+pairs.slice(0,8).map(function(p){ var w=max?Math.round(p[1]/max*100):0; return '<div class="sbar"><span class="stl">'+esc(p[0]||'–')+'</span><span class="stt"><i style="width:'+w+'%"></i></span><b>'+(typeof p[1]==='number'&&unit==='€'?eur(p[1]):p[1])+(unit&&unit!=='€'?' '+unit:'')+'</b></div>'; }).join('')+'</div>';
 }
 function statsDraw(rows){
   var now=Date.now(), from=STATS_DAYS?now-STATS_DAYS*864e5:0;
