@@ -1,6 +1,6 @@
 # WoodPlast 3D konfigurátor – nasadenie na woodplast.sk
 
-Verzia konfigurátora: **123** (31. 10. 2026). Balík obsahuje všetko potrebné; nasadenie zvládne správca webu za hodinu.
+Verzia konfigurátora: **124** (31. 10. 2026). Balík obsahuje všetko potrebné; nasadenie zvládne správca webu za hodinu.
 
 ## Aktuálne nasadenie: GitHub Pages (od 24. 10. 2026)
 

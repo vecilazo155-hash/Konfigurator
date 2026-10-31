@@ -216,11 +216,33 @@ vzdialenosť. Sadzby za km sú v pravidlách (`doprava50`, `doprava100`, `doprav
 ## 9. Parametre v adrese
 | Parameter | Význam |
 |---|---|
-| `?obchod` | panel obchodníka (pravidlá výpočtu, videonávody, embed, import z pôvodného konfigurátora `?cw=`) |
+| `?obchod` | panel obchodníka (pravidlá výpočtu, videonávody, embed, štatistiky, produktové stránky, import z pôvodného konfigurátora `?cw=`) |
 | `?embed=1` | bez hornej lišty (pre iframe) |
 | `?lang=en` / `de` / `hu` | jazyk rozhrania |
 | `#k=WP2…` | otvorí uloženú konfiguráciu (odkaz na zdieľanie, QR) |
 | `#terasa`, `#fasada`, `#plot`, `#slnolamy`, `#interier` | priamo otvorí produkt |
+| `?p=terrace&mat=wpc&decor=dub` (alebo `#p=…`) | otvorí produkt s materiálom a dekorom predvoleným – odkazy z produktových stránok a reklám (`p`: terrace / facade / fence / louvers / interior, aj slovensky terasa / fasada / plot / slnolamy / interier; pre terasu aj `shape=rect|L|U|T`, `a=400`, `b=300`) |
+| `?widget=1&p=…&decor=…` | **widget pre produktové stránky**: iba 3D model s pomalým obletom, prepínač dekorov a tlačidlo „Nakonfigurovať“ (vkladá sa cez iframe, kap. 11) |
+
+---
+
+## 11. Produktové stránky – 3D model a tlačidlo „Nakonfigurovať“
+
+Na každú produktovú stránku webu (terasy, fasády, ploty, slnolamy, interiér; prípadne na stránku dekoru) sa dá vložiť živý 3D model
+s prepínačom dekorov a tlačidlom, ktoré otvorí konfigurátor rovno s týmto produktom a dekorom.
+
+1. V konfigurátore otvorte `?obchod` → **Produktové stránky**. Vyberte produkt, materiál a dekor – zobrazí sa hotový kód (HTML).
+2. **Obrázky (poster):** tlačidlo „Obrázky pre tento materiál (ZIP)“ nafotí 3D model vo všetkých dekoroch (1600 × 900 px). Nahrajte ich na web
+   do priečinka, ktorý je v poli „Priečinok s obrázkami“ (predvolene `/konfigurator/img/`). Stránka tak zobrazí obrázok okamžite a 3D model
+   (4,9 MB) sa načíta až po kliknutí – stránka ostane rýchla a dobrá pre vyhľadávače.
+3. **Kód:** „Kopírovať kód“ (jeden dekor) alebo „Všetky dekory tohto materiálu“ (celý zoznam + skript). Vo WordPresse vložte do bloku „Vlastné HTML“.
+   Skript stačí raz na stránku (je v kóde „Všetky dekory“, inak „Kopírovať skript“).
+4. Tlačidlo „Nakonfigurovať“ vedie na stránku s konfigurátorom (`embedLink`) s `#p=produkt&mat=…&decor=…` – skript z `embed-priklad.html`
+   ho odovzdá do iframe (preposiela `#k=` aj `#p=`). Bez `embedLink` vedie priamo na adresu konfigurátora s `?p=…`.
+5. Widget má vlastné udalosti v štatistikách: `widget` (zobrazenie), `widget_decor` (zmena dekoru), `widget_cta` (klik na Nakonfigurovať).
+
+Adresa widgetu: `…/Konfigurator/?widget=1&p=terrace&mat=wpc&decor=dub` – dá sa použiť aj samostatne (napr. v newsletteri cez obrázok s odkazom).
+Odporúčaný rozmer iframe: pomer 16 : 9, min. výška 320 px; na mobile sa prispôsobí šírke.
 
 ---
 
