@@ -33,7 +33,15 @@ window.WP3D_CONFIG = {
   /* Automatická ponuka zákazníkovi e-mailom hneď po dopyte: webhook Make scenára „Ponuka zákazníkovi“ (NAVOD: Make → Email).
      Konfigurátor naň po prijatom dopyte s cenou pošle {email:{to, subject, html, text}, pdf:{name, base64}}. Prázdne = e-mail sa neposiela;
      PDF ponuky je aj tak v dopyte (payload.offerPdf a attachments), takže ho môže poslať aj existujúci scenár. */
-  offerEmailWebhook: ""
+  offerEmailWebhook: "",
+  /* Štatistiky (čo ľudia konfigurujú, odkiaľ sú, koľko pošle dopyt) – bez cookies a bez osobných údajov:
+     ga4      – meracie ID Google Analytics 4 ("G-XXXXXXXXXX"); udalosti visit, product_open, config, inquiry, offer_pdf, share, advisor, ar…
+     consent  – "granted", ak má stránka vlastnú lištu súhlasu a konfigurátor sa ukazuje až po súhlase; inak GA beží bez cookies (consent mode);
+                stránka s iframe môže súhlas poslať aj správou: postMessage({type:"wp3d", cmd:"consent", analytics:true}, "*")
+     webhook  – webhook Make, ktorý zapíše riadok do Google tabuľky (stĺpce: ts, event, session, product, shape, decor, mat, area, total, priced,
+                city, km, lang, device, ref, utm, embed, reason, samples, photos, kind); 1–4 riadky na návštevu
+     sheetCsv – adresa tej tabuľky publikovanej na webe ako CSV – panel ?obchod → Štatistiky z nej nakreslí prehľad */
+  analytics: { ga4: "", consent: "", webhook: "", sheetCsv: "" }
 };
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -863,6 +871,14 @@ html.embed header.top{display:none}html.embed .app{min-height:auto}
 .advsend{flex:none;min-height:46px;height:46px;padding:0 16px;border-radius:14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 @media(max-width:600px){.advsend span{display:none}.advsend{width:46px;padding:0;justify-content:center}.advhead h1{font-size:20px}.advm{max-width:92%;font-size:14.5px}}
 @media (max-width:900px) and (pointer:coarse){ input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea{font-size:16px!important} }
+.statsin{max-width:1100px}.statsbar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:6px 0 10px}.statdays{display:flex;gap:4px;flex-wrap:wrap}.statdays .chip{min-height:40px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}.kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.kpi span{font-size:12px;color:var(--muted)}.kpi b{font-family:'Nunito',sans-serif;font-size:26px;letter-spacing:-.01em}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}.statcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.statcard h3{margin:0 0 10px;font-size:14px}.sbar{display:grid;grid-template-columns:minmax(90px,38%) 1fr auto;gap:8px;align-items:center;font-size:13px;margin:5px 0}
+.sbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}.sbt{height:10px;background:var(--soft);border-radius:999px;overflow:hidden}.sbt i{display:block;height:100%;background:var(--accent);border-radius:999px}
+.sbar b{font-variant-numeric:tabular-nums;white-space:nowrap}.spark{display:flex;align-items:flex-end;gap:2px;height:70px;margin-top:4px}.spark i{flex:1;min-width:3px;background:var(--accent);border-radius:2px 2px 0 0;opacity:.85}
+.statshelp{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 18px;font-size:14px;line-height:1.55}.statshelp h2{margin:0 0 8px;font-size:17px}.statshelp code{background:var(--soft);padding:1px 5px;border-radius:5px;font-size:12px}
 </style>
 </head>
 <body>
@@ -1185,6 +1201,7 @@ html.embed header.top{display:none}html.embed .app{min-height:auto}
         <p class="note">Jeden riadok = názov kroku (alebo jeho začiatok, „*“ = všetky kroky) = odkaz na YouTube. Ukladá sa v tomto prehliadači; na webe sa dá zapísať natrvalo (VIDEOS_DEFAULT).</p>
         <textarea id="videosIn" rows="4" style="width:100%;font-size:12px" placeholder="Pripraviť podklad = https://youtu.be/…&#10;Klásť dosky a klipy = https://youtu.be/…&#10;* = https://youtu.be/…"></textarea>
         <button type="button" class="btn-ghost" id="embedBtn" style="margin-top:10px;width:100%">Vložiť na web (embed)</button>
+        <button type="button" class="btn-ghost" id="statsBtn" style="margin-top:10px;width:100%">Štatistiky (návštevy, konfigurácie, dopyty)</button>
         <button type="button" class="btn-ghost" id="resetRules" style="margin-top:10px;width:100%">Obnoviť pravidlá z cenníka</button>
       </details>
 
@@ -1297,6 +1314,10 @@ html.embed header.top{display:none}html.embed .app{min-height:auto}
 <section class="planview" id="embedView" hidden aria-labelledby="embedTitle">
   <div class="planbar"><button type="button" class="backlink" id="embedBack"><span aria-hidden="true">←</span> Späť na konfigurátor</button></div>
   <div class="planin embedin"><h1 id="embedTitle">Vloženie konfigurátora na woodplast.sk</h1><div id="embedIn"></div></div>
+</section>
+<section class="planview" id="statsView" hidden aria-labelledby="statsTitle">
+  <div class="planbar"><button type="button" class="backlink" id="statsBack"><span aria-hidden="true">←</span> Späť na konfigurátor</button></div>
+  <div class="planin statsin"><h1 id="statsTitle">Štatistiky konfigurátora</h1><div id="statsIn"></div></div>
 </section>
 <section class="planview" id="advView" hidden aria-labelledby="advTitle">
   <div class="planbar"><button type="button" class="backlink" id="advBack"><span aria-hidden="true">←</span> Späť na konfigurátor</button></div>
@@ -5755,6 +5776,7 @@ function splitBind(){
 var AR={session:null, reticle:null, src:null, placed:false};
 function arAvailable(cb){ if(!navigator.xr||!navigator.xr.isSessionSupported){ cb(false); return; } navigator.xr.isSessionSupported('immersive-ar').then(function(ok){ cb(!!ok); }).catch(function(){ cb(false); }); }
 function arStart(){
+  anTrack('ar', {product:state.product});
   if(!three||!three.lastR||three.lastR.err){ toast('AR ukážeme, keď je zadanie bez chyby a 3D načítané.'); return; }
   if(!navigator.xr){ toast('Tento prehliadač AR nepodporuje – skúste Chrome na Androide.'); return; }
   var ov=$('arOverlay'), opts={requiredFeatures:['hit-test'], optionalFeatures:['dom-overlay']}; if(ov) opts.domOverlay={root:ov};
@@ -6097,6 +6119,7 @@ function shareButtonsHtml(){
     +(demo?'<p class="note" style="margin:0;color:var(--on-forest-muted)">Toto je ukážka na claude.ai – bezpečnostný rámec tu neotvorí WhatsApp, Messenger ani e-mail. Text s kódom konfigurácie sa skopíruje do schránky, vložte ho do správy. Na woodplast.sk sa aplikácie otvoria priamo.</p>':'');
 }
 function shareVia(kind, ev){
+  anTrack('share', {kind:kind, product:state.product});
   var url=shareUrl(), code=encodeConfig(), text=shareText(), body=text+'\n'+(url||'Kód konfigurácie: '+code), demo=!!(window.claude&&typeof window.claude.use==='function');
   if(kind==='native'){ if(!navigator.share) return;
     navigator.share(url?{title:'WoodPlast – konfigurácia', text:text, url:url}:{title:'WoodPlast – konfigurácia', text:body}).catch(function(e){ if(e&&e.name==='AbortError') return;
@@ -6243,7 +6266,7 @@ function embedInit(){
   setInterval(send, 1500);
   /* rodič môže poslať {type:'wp3d', cmd:'load', code:'WP2…'} alebo {cmd:'product', product:'terrace'} */
   window.addEventListener('message', function(e){ var d=e.data; if(!d||d.type!=='wp3d'||!d.cmd) return;
-    try{ if(d.cmd==='load'&&typeof d.code==='string') loadCode(d.code); else if(d.cmd==='product'&&own(PROD_NAMES,d.product)) openWork(d.product, true); else if(d.cmd==='height') send(); }catch(x){} });
+    try{ if(d.cmd==='load'&&typeof d.code==='string') loadCode(d.code); else if(d.cmd==='product'&&own(PROD_NAMES,d.product)) openWork(d.product, true); else if(d.cmd==='height') send(); else if(d.cmd==='consent') anConsent(!!d.analytics); }catch(x){} });
 }
 function embedSnippet(){
   var src=noView(location.href.split('#')[0]).replace(/[?&]obchod(=\w*)?/,'').replace(/[?&]vsetko(=\w*)?/,'').replace(/\?$/,''); if(!/^https?:/.test(src)) src='https://www.woodplast.sk/konfigurator/';
@@ -6704,7 +6727,7 @@ function i18nApply(root){
   finally{ I18N_BUSY=false; if(I18N_OBS) I18N_OBS.takeRecords(); }
 }
 function i18nSet(l, save){
-  if(!own(LANGS,l)) l='sk'; LANG=l; document.documentElement.lang=l; if(save){ try{ localStorage.setItem(LANG_KEY,l); }catch(e){} }
+  if(!own(LANGS,l)) l='sk'; LANG=l; document.documentElement.lang=l; if(save){ try{ localStorage.setItem(LANG_KEY,l); }catch(e){} anTrack('lang', {lang:l}); }
   document.querySelectorAll('[data-lang]').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.lang===l)); });
   i18nApply(document.body);
   if(l==='sk'){ if(I18N_OBS){ I18N_OBS.disconnect(); I18N_OBS=null; } return; }
@@ -6954,6 +6977,7 @@ function pwaInit(){
   var b=$('vinstall'); if(b&&ios&&!standalone&&!isDemo()) b.hidden=false;
 }
 function pwaInstall(){
+  anTrack('pwa', {});
   if(PWA_PROMPT){ PWA_PROMPT.prompt(); PWA_PROMPT.userChoice.then(function(){ PWA_PROMPT=null; }); return; }
   var ios=/iPhone|iPad|iPod/i.test(navigator.userAgent);
   toastAct(ios?'V Safari klepnite na Zdieľať (štvorec so šípkou) a potom „Pridať na plochu“.':'V menu prehliadača (⋮) zvoľte „Pridať na plochu“ alebo „Nainštalovať aplikáciu“.', 'Rozumiem', function(){}, true);
@@ -7313,6 +7337,7 @@ var ADVISOR_SYS='Si poradca firmy WoodPlast (Zvolen, Slovensko) pre WPC terasy, 
   +'Fakty: WPC dosky WoodPlast 5,8 m, hliníková konštrukcia, terče 7–28 cm, záruka WPC 20 rokov, Renolit a Natura 25 rokov, montáž a doprava bez DPH (montážnici nie sú platcami DPH), podklad si pripraví zákazník, terasa nepotrebuje nátery, čistí sa vodou.';
 function advisorAsk(q){
   var box=$('advLog'), inp=$('advIn'), btn=$('advSend'); if(!q||ADVISOR_BUSY) return;
+  anTrack('advisor', {product:state.product});
   ADVISOR_HIST.push({role:'user', content:q}); advisorLog();
   ADVISOR_BUSY=true; if(btn) btn.disabled=true; var ans='', item=advisorLogItem('assistant','…');
   var done=function(text){ ADVISOR_HIST.push({role:'assistant', content:text}); item.textContent=text; ADVISOR_BUSY=false; if(btn) btn.disabled=false; box.scrollTop=box.scrollHeight; };
@@ -7346,7 +7371,7 @@ var GUIDE_STEPS=[
   {k:'who', q:'Kto bude montovať?', a:[['provider','WoodPlast','montáž tímom WoodPlast'],['self','Ja sám','materiál narezaný na mieru'],['self-no-cut','Ja sám, celé dosky','lacnejšie, odpad ostáva mne']]}
 ];
 var GUIDE={i:0, ans:{}};
-function guideOpen(){ GUIDE={i:0, ans:{}}; guideRender(); showView('guideView', false); }
+function guideOpen(){ anTrack('guide', {}); GUIDE={i:0, ans:{}}; guideRender(); showView('guideView', false); }
 function guideStepsFor(){ var p=GUIDE.ans.what||'terrace'; return GUIDE_STEPS.filter(function(s){ return !s.only||s.only===p; }); }
 function guideRender(){ var box=$('guideIn'); if(!box) return; var steps=guideStepsFor(); if(GUIDE.i>=steps.length){ guideFinish(); return; } var st=steps[GUIDE.i];
   box.innerHTML='<p class="note">Otázka '+(GUIDE.i+1)+' z '+steps.length+'</p><h2>'+esc(st.q)+'</h2><div class="opts guideopts">'+st.a.map(function(a){ return '<button type="button" class="opt" data-gans="'+esc(a[0])+'" aria-pressed="'+(GUIDE.ans[st.k]===a[0])+'"><span><b>'+esc(a[1])+'</b><small>'+esc(a[2])+'</small></span></button>'; }).join('')+'</div>'
@@ -7446,16 +7471,16 @@ function renderOffer(){
    nie je krok, ktorý nič nespraví. Záznam preberá adresu konfigurátora, preto sa pred ním uloží zmena, ktorej autosave ešte čaká (changeUnsaved) –
    pri chránenom koncepte by inak adresa #k= niesla konfiguráciu spred nej a obnovenie stránky by pohľad otvorilo pre ňu.
    fromHistory: otvára sa záznam, ktorý už v histórii je – nový sa nepridá */
-var VIEWS=['planView','offerView','photoView','swatchView','hdView','cmpView','embedView','advView','guideView'];
+var VIEWS=['planView','offerView','photoView','swatchView','hdView','cmpView','embedView','advView','guideView','statsView'];
 function viewsOpen(){ return VIEWS.some(function(id){ var el=$(id); return !!el&&!el.hidden; }); }
 function showView(id, fromHistory){ var was=viewsOpen(), add=!was&&!fromHistory; if(add&&changeUnsaved()) autosaveNow();
   $(id).hidden=false; $(id).scrollTop=0; syncInert(); embedPost('view',{view:id}); if(add){ try{ history.pushState({wpView:id},''); }catch(e){} } }
-function openOffer(fromHistory){ renderOffer(); showView('offerView', fromHistory===true); $('offerBack').focus(); }
+function openOffer(fromHistory){ anTrack('offer_open', {product:state.product}); renderOffer(); showView('offerView', fromHistory===true); $('offerBack').focus(); }
 function openPlan(fromHistory){ renderPlan(); showView('planView', fromHistory===true); $('planBack').focus(); }
 /* popstate (a obnovenie stránky s konfiguráciou z #k=): záznam plánu či ponuky (history.state.wpView) ho otvorí, iný záznam otvorený pohľad zavrie */
 function viewFromHistory(){
   var v=null; try{ v=history.state&&history.state.wpView; }catch(e){}
-  if(VIEWS.indexOf(v)>=0&&!document.querySelector('.main').hidden){ if($(v).hidden){ hideViews(); if(v==='planView') openPlan(true); else if(v==='photoView') openPhoto(true); else if(v==='swatchView') openSwatch(true); else if(v==='hdView') openHd(); else if(v==='cmpView') openCmp(true); else if(v==='embedView') openEmbed(true); else if(v==='advView') openAdvisor(true); else if(v==='guideView') guideOpen(); else openOffer(true); } return; }
+  if(VIEWS.indexOf(v)>=0&&!document.querySelector('.main').hidden){ if($(v).hidden){ hideViews(); if(v==='planView') openPlan(true); else if(v==='photoView') openPhoto(true); else if(v==='swatchView') openSwatch(true); else if(v==='hdView') openHd(); else if(v==='cmpView') openCmp(true); else if(v==='embedView') openEmbed(true); else if(v==='statsView') statsOpen(true); else if(v==='advView') openAdvisor(true); else if(v==='guideView') guideOpen(); else openOffer(true); } return; }
   hideViews();
 }
 function closeViews(){ if(history.state&&history.state.wpView){ history.back(); return; } hideViews(); }
@@ -8256,6 +8281,7 @@ function sendInquiry(){
       if(!res.ok) throw new Error(res.status);
       /* úspech až po odpovedi webhooku: potvrdenie ostane na mieste formulára (predtým správa na 2,6 s a formulár zmizol) */
       INQUIRY_SENT={code:code, sig:sig, email:email, phone:phone, call:call?call.when:''}; offerEmailSend(payload);
+      try{ var anI=anSnapshot(); anI.samples=(payload.samples||[]).length; anI.photos=(payload.sitePhotos||[]).length; anI.pdf=payload.offerPdf?1:0; anI.kind=payload.kind||''; AN_DIRTY=false; AN_LASTCFG=''; anTrack('inquiry', anI); }catch(e){}
       embedPost('inquiry', {name:name, email:email, phone:phone, product:pk, total:priced?Math.round(r.total*100)/100:null, priced:priced, code:code, link:link||null, samples:(payload&&payload.samples)||[], title:configTitle()});
       /* formulár medzitým zavrela nová konfigurácia (iný produkt, kód) alebo je v zbalenom kroku: výsledok povie správa */
       if(!askOnScreen(sentP)){ askButtons(); toast(call?'Dopyt sme prijali – zavoláme vám '+call.when+'.':'Dopyt sme prijali – ozveme sa vám do 24 hodín na '+email+'.'); return; }
@@ -8309,6 +8335,7 @@ function resetProduct(p){
   state.product=p; var sc=cityShared(); if(sc!=null) state.city=sc; photoReset(); uiMemReset(); scheduleDistance();
 }
 function openProduct(p, push, fresh){
+  anFlush('product');
   var reset=push||fresh||state.product!==p; toastActHide();
   if(reset) resetProduct(p);
   SEL=null; state.product=p;
@@ -8323,7 +8350,7 @@ function openProduct(p, push, fresh){
   var h = pick(PROD_HASH,p) || '#terasa';
   if(push && location.hash!==h){ try{ history.pushState(null,'',h); }catch(e){ location.hash=h; } }
   CFG_HASH=location.hash; /* záznam konfigurátora, ktorý teraz patrí tejto konfigurácii (aj nový záznam dlaždice) */
-  MEM_P=p;
+  MEM_P=p; anTrack('product_open', {product:p});
   window.scrollTo(0,0); if(reset){ STEP_MENU=false; var pn=document.querySelector('aside.panel'); if(pn) pn.scrollTop=0; }
   renderControls(); setView('3d');
   requestAnimationFrame(function(){ resize(); update(); fitCamera(); });
@@ -10304,7 +10331,7 @@ function recalc(sync){
   if(r===WARM_YIELD){ calcBusy(true); warmNext(); return; }
   calcBusy(false);
   if(!sync&&r.err&&!r.fatal&&!r.gate&&TYPED&&document.activeElement===TYPED){ HELD=true; last=r; autosave(); return; }
-  HELD=false; renderSummary(r); build3D(r); last=r; offerImgRetry(); autosave(); matCmpSync(); renderSection(); renderMap(); renderUneven(); montEstRender(r); embedConfigPost(r); woodCmpSync();
+  HELD=false; renderSummary(r); build3D(r); last=r; offerImgRetry(); autosave(); matCmpSync(); renderSection(); renderMap(); renderUneven(); montEstRender(r); embedConfigPost(r); woodCmpSync(); anDirty();
 }
 function calcStep(){ WARM=2; try{ return calc(); }catch(e){ if(e===WARM_YIELD) return e; throw e; }finally{ WARM=0; } }
 /* ďalší krok až po vykreslení snímky (rAF a potom úloha), aby sa ukázalo „Počítam…“ a prehliadač medzi behmi reagoval */
@@ -10364,7 +10391,7 @@ function bind(){
   $('openPlan').addEventListener('click',function(){ if(!actBlocked()) openPlan(); });
   $('openOffer').addEventListener('click',function(){ if(!actBlocked()) openOffer(); });
   $('matCompare').addEventListener('click',matCmpToggle);
-  bindPhoto(); bindExtras(); bindThreeX(); bindTerrX(); bindBatch2(); bindBatch3(); bindPoly(); bindBatch4(); bindBatch5(); i18nInit();
+  bindPhoto(); bindExtras(); bindThreeX(); bindTerrX(); bindBatch2(); bindBatch3(); bindPoly(); bindBatch4(); bindBatch5(); i18nInit(); bindStats();
   /* ponuka nástrojov nad 3D: otvorí sa čipom, zavrie klikom mimo, Escape alebo voľbou */
   (function(){ var b=$('smenuBtn'), m=$('smenu'); if(!b||!m) return;
     var close=function(){ m.hidden=true; b.setAttribute('aria-expanded','false'); };
@@ -10374,7 +10401,7 @@ function bind(){
     document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&!m.hidden){ close(); b.focus(); } }); })();
   $('offerBack').addEventListener('click',closeViews);
   $('offerAsk').addEventListener('click',function(){ VIEW_ASK=true; closeViews(); });
-  $('offerPrint').addEventListener('click',function(){ try{ window.print(); }catch(e){} });
+  $('offerPrint').addEventListener('click',function(){ anTrack('offer_print', {product:state.product}); try{ window.print(); }catch(e){} });
   $('offerPdfBtn').addEventListener('click', offerPdfDownload);
   $('askOpen').addEventListener('click',function(){ var b=$('askBox'); if(!b.hidden&&INQUIRY_BUSY) return; b.hidden=!b.hidden; if(!b.hidden) askReset().focus(); });
   /* lišta ceny: suma → rozpis, odkaz → obec alebo chyba, Poslať dopyt → formulár; skrytá, keď je súhrn na obrazovke (spodných 80 px patrí lište) */
@@ -10727,6 +10754,7 @@ function offerPdfBuild(d, cust){
 }
 /* stiahnutie z pohľadu „Cenová ponuka“ */
 function offerPdfDownload(){
+  anTrack('offer_pdf', {product:state.product});
   var b=$('offerPdfBtn'); if(b){ b.disabled=true; b.setAttribute('aria-busy','true'); }
   try{
     var d=offerPdfData(); if(!d){ toast('Ponuku teraz nevieme zostaviť – skontrolujte zadanie.'); }
@@ -10771,6 +10799,141 @@ function offerEmailSend(payload){
   if(!OFFER_WEBHOOK||!payload||!payload.offerEmail||!payload.offerEmail.to) return;
   var body={kind:'offer-email', source:'3d-konfigurator', sentAt:new Date().toISOString(), email:payload.offerEmail, pdf:payload.offerPdf||null, form:payload.form||null, url:payload.url||null};
   try{ fetch(OFFER_WEBHOOK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),credentials:'omit'}).catch(function(){}); }catch(e){}
+}
+
+/* ---------- Štatistiky: čo ľudia konfigurujú, odkiaľ sú, koľko pošle dopyt ----------
+   Dve cesty (nastavenia správcu → analytics):
+   • ga4: meracie ID Google Analytics 4 („G-…“) – udalosti product_open, config, inquiry, offer_pdf, share, advisor, ar; geografia a zariadenia
+     z GA (consent mode: bez súhlasu stránky bežia merania bez cookies).
+   • webhook: webhook Make → riadok do Google tabuľky (udalosti visit, product_open, config, inquiry, …) – vlastný prehľad bez cookies,
+     1–4 riadky na návštevu. Obec je tá, ktorú zákazník zadal pre dopravu (nie IP).
+   • sheetCsv: adresa tabuľky „publikovanej na webe“ ako CSV – panel ?obchod → Štatistiky ju načíta a nakreslí prehľad. */
+var AN=null, AN_SID='', AN_DIRTY=false, AN_LASTCFG='', AN_CSV_KEY='wp3d-stats-csv';
+/* nastavenia sa čítajú až pri prvom použití – bindStats() beží skôr, než sa vykonajú deklarácie na konci skriptu */
+function anCfg(){ if(!AN){ AN=(WPC&&WPC.analytics&&typeof WPC.analytics==='object')?WPC.analytics:{}; AN_SID=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); } return AN; }
+function anOn(){ var a=anCfg(); return !!(a.ga4||a.webhook); }
+function anBase(){
+  var ref=''; try{ ref=document.referrer?new URL(document.referrer).hostname:''; }catch(e){}
+  var utm=''; try{ utm=new URLSearchParams(location.search).get('utm_source')||''; }catch(e){}
+  return {ts:new Date().toISOString(), session:AN_SID, lang:LANG, device:isMobileLayout()?'mobil':'pocitac', ref:ref, utm:utm, embed:EMBED_IN?1:0};
+}
+/* zhrnutie konfigurácie – bez osobných údajov */
+function anSnapshot(){
+  var p=state.product, r=last, o={product:p, shape:'', decor:'', mat:'', area:'', total:'', priced:0, city:'', km:''};
+  try{
+    var nm=function(fn, fb){ try{ var d=fn(); return (d&&d.name)||fb||''; }catch(e){ return fb||''; } };
+    if(p==='terrace'){ o.shape=state.shape; o.decor=nm(curDecor, state.decor); o.mat=state.matType||'wpc'; }
+    else if(p==='facade'){ o.shape=fa.arr; o.decor=(FA_COL[fa.color]||[fa.color||''])[0]; o.mat=fa.mat||''; }
+    else if(p==='fence'){ o.shape=fe.shape||''; o.decor=nm(feDecor, fe.decor); o.mat=fe.type||''; }
+    else if(p==='louvers'){ o.decor=nm(lnDecor, ln.decor); o.mat='louvers'; }
+    else if(p==='interior'){ o.decor=nm(inDecor, iw.decor); o.mat=iw.mat||''; o.shape=iw.room||''; }
+    if(r&&!r.err){ var a=r.areaAll!=null?r.areaAll:r.area; o.area=a!=null?Math.round(a*10)/10:''; o.total=r.total!=null?Math.round(r.total):''; o.priced=1; }
+    if(state.city&&state.km){ o.city=String(state.kmPlace||state.city).split(',')[0].slice(0,40); o.km=Math.round(state.km); }
+  }catch(e){}
+  return o;
+}
+function anTrack(ev, data){
+  if(!anOn()) return;
+  var d=anBase(); d.event=ev; Object.keys(data||{}).forEach(function(k){ d[k]=data[k]; });
+  if(anCfg().ga4&&window.gtag&&!isDemo()){ try{ var g={}; Object.keys(d).forEach(function(k){ if(k!=='ts'&&k!=='session') g[k]=d[k]; }); gtag('event', ev, g); }catch(e){} }
+  if(anCfg().webhook){ try{ fetch(anCfg().webhook,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d),credentials:'omit',keepalive:true}).catch(function(){}); }catch(e){} }
+}
+/* snímka konfigurácie: pri odchode zo stránky, zmene produktu a pred dopytom – len keď sa od poslednej snímky niečo zmenilo */
+function anFlush(reason){
+  if(!anOn()||!AN_DIRTY) return; var mn=document.querySelector('.main'); if(!mn||mn.hidden) return; var s=anSnapshot(); var key=JSON.stringify(s); if(key===AN_LASTCFG) return; AN_LASTCFG=key; AN_DIRTY=false;
+  s.reason=reason||''; anTrack('config', s);
+}
+function anDirty(){ AN_DIRTY=true; }
+function anGaInit(){
+  if(!anCfg().ga4||window.gtag||isDemo()) return;
+  window.dataLayer=window.dataLayer||[]; window.gtag=function(){ window.dataLayer.push(arguments); };
+  gtag('consent','default',{analytics_storage:anCfg().consent==='granted'?'granted':'denied', ad_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
+  gtag('js', new Date()); gtag('config', anCfg().ga4, {anonymize_ip:true, page_title:'3D konfigurátor WoodPlast'});
+  var s=document.createElement('script'); s.async=true; s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(anCfg().ga4); document.head.appendChild(s);
+}
+function anConsent(granted){ if(window.gtag) try{ gtag('consent','update',{analytics_storage:granted?'granted':'denied'}); }catch(e){} }
+function anInit(){
+  anGaInit();
+  if(!anOn()) return;
+  anTrack('visit', {product:state.product||'', start:$('psel')&&!$('psel').hidden?1:0});
+  window.addEventListener('pagehide', function(){ anFlush('leave'); });
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='hidden') anFlush('hidden'); });
+}
+/* ---------- Prehľad v paneli ?obchod (z Google tabuľky publikovanej ako CSV) ---------- */
+function anCsvUrl(){ var u=''; try{ u=localStorage.getItem('wp3d-stats-csv')||''; }catch(e){} return u||anCfg().sheetCsv||''; }
+function csvParse(t){
+  var rows=[], row=[], cell='', q=false; t=String(t||'').replace(/\r\n?/g,'\n');
+  for(var i=0;i<t.length;i++){ var c=t[i];
+    if(q){ if(c==='"'){ if(t[i+1]==='"'){ cell+='"'; i++; } else q=false; } else cell+=c; }
+    else if(c==='"') q=true; else if(c===','){ row.push(cell); cell=''; } else if(c==='\n'){ row.push(cell); rows.push(row); row=[]; cell=''; } else cell+=c; }
+  if(cell!==''||row.length){ row.push(cell); rows.push(row); }
+  if(!rows.length) return [];
+  var head=rows[0].map(function(h){ return h.trim().toLowerCase(); });
+  return rows.slice(1).filter(function(r){ return r.length>1; }).map(function(r){ var o={}; head.forEach(function(h,i){ o[h]=(r[i]||'').trim(); }); return o; });
+}
+function statsOpen(fromHistory){ statsRender(); showView('statsView', fromHistory===true); $('statsBack').focus(); }
+var STATS_DAYS=30, STATS_ROWS=null;
+function statsRender(){
+  var box=$('statsIn'), url=anCsvUrl();
+  var top='<div class="statsbar"><label class="f" style="flex:1 1 280px;min-width:0"><span class="note">Google tabuľka publikovaná ako CSV (Súbor → Zdieľať → Publikovať na webe → CSV)</span><input type="url" id="statsCsv" value="'+esc(url)+'" placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?output=csv"></label>'
+    +'<div class="statdays" role="group" aria-label="Obdobie">'+[7,30,90,0].map(function(d){ return '<button type="button" class="chip" data-sdays="'+d+'" aria-pressed="'+(d===STATS_DAYS)+'">'+(d?d+' dní':'všetko')+'</button>'; }).join('')+'</div>'
+    +'<button type="button" class="chip" id="statsLoad">Načítať</button></div><p class="note" id="statsMsg"></p><div id="statsBody"></div>';
+  box.innerHTML=top;
+  $('statsLoad').addEventListener('click', function(){ var u=$('statsCsv').value.trim(); try{ if(u) localStorage.setItem('wp3d-stats-csv',u); else localStorage.removeItem('wp3d-stats-csv'); }catch(e){} statsLoad(u); });
+  box.querySelectorAll('[data-sdays]').forEach(function(b){ b.addEventListener('click', function(){ STATS_DAYS=+b.dataset.sdays; box.querySelectorAll('[data-sdays]').forEach(function(x){ x.setAttribute('aria-pressed', String(x===b)); }); if(STATS_ROWS) statsDraw(STATS_ROWS); }); });
+  if(url) statsLoad(url); else $('statsBody').innerHTML=statsHelp();
+}
+function statsHelp(){
+  return '<div class="statshelp"><h2>Ako zapnúť štatistiky</h2><ol>'
+    +'<li>V Make vytvorte scenár <b>Webhooks → Custom webhook</b> → <b>Google Sheets → Add a row</b>. Do tabuľky dajte prvý riadok s názvami stĺpcov: <code>ts, event, session, product, shape, decor, mat, area, total, priced, city, km, lang, device, ref, utm, embed, reason, samples, photos, kind</code> a každý stĺpec namapujte na rovnomenné pole z webhooku.</li>'
+    +'<li>Adresu webhooku vložte do nastavení konfigurátora: <code>analytics: { webhook: "https://hook…" }</code>. Konfigurátor potom posiela 1–4 riadky na návštevu (návšteva, otvorený produkt, snímka konfigurácie pri odchode, dopyt) – bez cookies a bez osobných údajov.</li>'
+    +'<li>Tabuľku publikujte ako CSV (Súbor → Zdieľať → Publikovať na webe → celý dokument → CSV) a adresu vložte sem alebo do <code>analytics.sheetCsv</code>.</li>'
+    +'<li>Voliteľne pridajte Google Analytics 4: <code>analytics: { ga4: "G-XXXXXXX" }</code> – mapu návštev podľa miest a zariadení uvidíte v GA.</li></ol></div>';
+}
+function statsLoad(url){
+  var msg=$('statsMsg'), body=$('statsBody'); if(!url){ body.innerHTML=statsHelp(); return; }
+  msg.textContent='Načítavam…'; body.innerHTML='';
+  fetch(url, {credentials:'omit', cache:'no-store'}).then(function(r){ if(!r.ok) throw new Error(r.status); return r.text(); }).then(function(t){
+    var rows=csvParse(t); if(!rows.length){ msg.textContent='Tabuľka je prázdna alebo nemá hlavičku (ts, event, …).'; body.innerHTML=statsHelp(); return; }
+    STATS_ROWS=rows; msg.textContent=''; statsDraw(rows);
+  }).catch(function(e){ msg.textContent='Tabuľku sa nepodarilo načítať ('+(e&&e.message||'chyba')+'). Skontrolujte, či je publikovaná na webe ako CSV.'; body.innerHTML=statsHelp(); });
+}
+function statsBar(title, pairs, unit){
+  var max=0; pairs.forEach(function(p){ max=Math.max(max,p[1]); }); if(!pairs.length) return '';
+  return '<div class="statcard"><h3>'+esc(title)+'</h3>'+pairs.slice(0,8).map(function(p){ var w=max?Math.round(p[1]/max*100):0; return '<div class="sbar"><span class="sbl">'+esc(p[0]||'–')+'</span><span class="sbt"><i style="width:'+w+'%"></i></span><b>'+(typeof p[1]==='number'&&unit==='€'?eur(p[1]):p[1])+(unit&&unit!=='€'?' '+unit:'')+'</b></div>'; }).join('')+'</div>';
+}
+function statsDraw(rows){
+  var now=Date.now(), from=STATS_DAYS?now-STATS_DAYS*864e5:0;
+  var R=rows.filter(function(r){ var t=Date.parse(r.ts||''); return !isNaN(t)&&t>=from; });
+  var sess={}, prodSess={}, inq=R.filter(function(r){ return r.event==='inquiry'; }), cfg=R.filter(function(r){ return r.event==='config'; });
+  R.forEach(function(r){ if(r.session) sess[r.session]=1; });
+  R.filter(function(r){ return r.event==='product_open'; }).forEach(function(r){ prodSess[r.product+'|'+r.session]=1; });
+  var visits=Object.keys(sess).length, opened=Object.keys(prodSess).length;
+  var byProd={}, dec={}, shp={}, city={}, dev={}, lang={}, dayC={}, totSum={}, totN={}, areaSum={}, areaN={}, ref={}, inqProd={};
+  var PN={terrace:'Terasa', facade:'Fasáda', fence:'Plot', louvers:'Slnolamy', interior:'Interiér'};
+  Object.keys(prodSess).forEach(function(k){ var p=k.split('|')[0]; byProd[p]=(byProd[p]||0)+1; });
+  cfg.forEach(function(r){ var p=PN[r.product]||r.product; if(r.decor) dec[p+' · '+r.decor]=(dec[p+' · '+r.decor]||0)+1; if(r.shape) shp[p+' · '+r.shape]=(shp[p+' · '+r.shape]||0)+1;
+    var t=parseFloat(r.total), a=parseFloat(r.area); if(t>0){ totSum[p]=(totSum[p]||0)+t; totN[p]=(totN[p]||0)+1; } if(a>0){ areaSum[p]=(areaSum[p]||0)+a; areaN[p]=(areaN[p]||0)+1; } });
+  R.forEach(function(r){ if(r.city) city[r.city]=(city[r.city]||0)+1; });
+  R.filter(function(r){ return r.event==='visit'; }).forEach(function(r){ dev[r.device||'–']=(dev[r.device||'–']||0)+1; lang[(r.lang||'sk').toUpperCase()]=(lang[(r.lang||'sk').toUpperCase()]||0)+1; if(r.ref) ref[r.ref]=(ref[r.ref]||0)+1; var d=(r.ts||'').slice(0,10); dayC[d]=(dayC[d]||0)+1; });
+  inq.forEach(function(r){ var p=PN[r.product]||r.product; inqProd[p]=(inqProd[p]||0)+1; });
+  var sorted=function(o){ return Object.keys(o).map(function(k){ return [k,o[k]]; }).sort(function(a,b){ return b[1]-a[1]; }); };
+  var conv=opened?Math.round(inq.length/opened*1000)/10:0;
+  var kpi='<div class="kpis">'+[['Návštevy',visits],['Otvorené konfigurácie',opened],['Dopyty',inq.length],['Konverzia',conv+' %']].map(function(k){ return '<div class="kpi"><span>'+k[0]+'</span><b>'+k[1]+'</b></div>'; }).join('')+'</div>';
+  /* návštevy po dňoch */
+  var days=Object.keys(dayC).sort(), maxD=0; days.forEach(function(d){ maxD=Math.max(maxD, dayC[d]); });
+  var tl=days.length>1?'<div class="statcard"><h3>Návštevy po dňoch</h3><div class="spark">'+days.slice(-60).map(function(d){ return '<i title="'+d+': '+dayC[d]+'" style="height:'+(maxD?Math.max(4,Math.round(dayC[d]/maxD*100)):4)+'%"></i>'; }).join('')+'</div><p class="note">'+esc(days[0])+' – '+esc(days[days.length-1])+'</p></div>':'';
+  var prodPairs=sorted(byProd).map(function(p){ return [PN[p[0]]||p[0], p[1]]; });
+  var avgT=Object.keys(totN).map(function(p){ return [p, Math.round(totSum[p]/totN[p])]; }).sort(function(a,b){ return b[1]-a[1]; });
+  var avgA=Object.keys(areaN).map(function(p){ return [p, Math.round(areaSum[p]/areaN[p]*10)/10]; }).sort(function(a,b){ return b[1]-a[1]; });
+  var h=kpi+tl+'<div class="statgrid">'+statsBar('Otvorené produkty', prodPairs)+statsBar('Dopyty podľa produktu', sorted(inqProd))+statsBar('Najčastejšie dekory', sorted(dec))+statsBar('Tvary a usporiadanie', sorted(shp))
+    +statsBar('Priemerná cena konfigurácie', avgT, '€')+statsBar('Priemerná plocha', avgA, 'm²')+statsBar('Odkiaľ sú zákazníci (zadaná obec)', sorted(city))+statsBar('Zariadenie', sorted(dev))+statsBar('Jazyk', sorted(lang))+statsBar('Odkiaľ prišli (odkazujúca stránka)', sorted(ref))+'</div>'
+    +'<p class="note">Riadkov v období: '+R.length+' · návšteva = jedno otvorenie konfigurátora (bez cookies), konverzia = dopyty / otvorené konfigurácie. Geografiu podľa polohy zariadenia ukazuje Google Analytics, ak je zapnuté.</p>';
+  $('statsBody').innerHTML=h;
+}
+function bindStats(){
+  var b=$('statsBtn'); if(b) b.addEventListener('click', function(){ statsOpen(); }); var bk=$('statsBack'); if(bk) bk.addEventListener('click', closeViews);
+  anInit();
 }
 
 followUpOpen();
