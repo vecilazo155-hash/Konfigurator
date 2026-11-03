@@ -1,16 +1,18 @@
 # WoodPlast 3D konfigurátor – nasadenie na woodplast.sk
 
-Verzia konfigurátora: **124** (31. 10. 2026). Balík obsahuje všetko potrebné; nasadenie zvládne správca webu za hodinu.
+Verzia konfigurátora: **128** (3. 11. 2026). Balík obsahuje všetko potrebné; nasadenie zvládne správca webu za hodinu.
 
-## Aktuálne nasadenie: GitHub Pages (od 24. 10. 2026)
+## Aktuálne nasadenie: GitHub Pages + subdoména konfigurator.woodplast.sk (od 24. 10. 2026)
 
 Konfigurátor beží na **https://vecilazo155-hash.github.io/Konfigurator/** z repozitára `vecilazo155-hash/Konfigurator`
 (súbory `index.html`, `sw.js`, `embed-priklad.html`; nasadenie robí automaticky workflow `.github/workflows/pages.yml`
 pri každom push do `main`). Aktualizácie robí WoodPlast cez Claude priamo v repozitári – správca webu nič nenahráva.
 V hostovanej kópii je `forceMake: true`, takže dopyty idú cez Make aj z domény github.io.
 
-Správca webu urobí jednorazovo: vloží iframe na stránku (krok 2 nižšie, adresa iframe = github.io) a pridá DNS
-`CNAME konfigurator → vecilazo155-hash.github.io`. Po DNS sa do repozitára pridá súbor `CNAME` s obsahom
+Odporúčaný variant (po dohode so správcom webu 3. 11. 2026): konfigurátor beží **na samostatnej subdoméne** konfigurator.woodplast.sk, nie v iframe –
+lepšie na mobile, celá obrazovka, priame odkazy na konfigurácie, vlastná indexácia. Správca webu urobí jednorazovo: pridá DNS
+`CNAME konfigurator → vecilazo155-hash.github.io` a na web dá odkaz „3D konfigurátor“ (menu + tlačidlá na produktových stránkach).
+Iframe (krok 2) je len voliteľný – pre malé 3D widgety na produktových stránkach (SPRAVCA.md kap. 11). Po DNS sa do repozitára pridá súbor `CNAME` s obsahom
 `konfigurator.woodplast.sk` a v nastaveniach GitHub Pages sa zapne „Enforce HTTPS“ – konfigurátor potom beží na
 https://konfigurator.woodplast.sk/. Kroky 1 (FTP) nižšie sú alternatíva, ak by mal konfigurátor bežať priamo na hostingu webu.
 
@@ -39,7 +41,7 @@ Dopyty sa na doméne woodplast.sk posielajú automaticky na existujúce webhooky
 
 Konfigurátor môže bežať na vlastnej adrese `/konfigurator/`, alebo ho vložíte do existujúcej stránky webu:
 
-1. Otvorte `konfigurator/embed-priklad.html` – je v ňom hotový kód `<iframe>` + skript. Skopírujte ho do stránky (WordPress: blok „Vlastné HTML“).
+1. Otvorte `konfigurator/embed-priklad.html` – je v ňom hotový kód `<iframe>` + skript. Skopírujte ho do stránky (Webflow: prvok Embed; WordPress: blok „Vlastné HTML“).
 2. Skript sám prispôsobuje výšku iframe obsahu (žiadne dvojité posúvanie) a odovzdáva odkazy `#k=…` na konfiguráciu do iframe.
 3. V `index.html` hore v bloku **NASTAVENIA PRE SPRÁVCU WEBU** nastavte `embedLink` na adresu tejto stránky, napr. `"https://www.woodplast.sk/konfigurator-terasy"` – odkazy na zdieľanie a QR kódy potom vedú na stránku webu.
 

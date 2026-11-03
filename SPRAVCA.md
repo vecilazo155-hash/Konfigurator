@@ -235,8 +235,8 @@ s prepínačom dekorov a tlačidlom, ktoré otvorí konfigurátor rovno s týmto
 2. **Obrázky (poster):** tlačidlo „Obrázky pre tento materiál (ZIP)“ nafotí 3D model vo všetkých dekoroch (1600 × 900 px). Nahrajte ich na web
    do priečinka, ktorý je v poli „Priečinok s obrázkami“ (predvolene `/konfigurator/img/`). Stránka tak zobrazí obrázok okamžite a 3D model
    (4,9 MB) sa načíta až po kliknutí – stránka ostane rýchla a dobrá pre vyhľadávače.
-3. **Kód:** „Kopírovať kód“ (jeden dekor) alebo „Všetky dekory tohto materiálu“ (celý zoznam + skript). Vo WordPresse vložte do bloku „Vlastné HTML“.
-   Skript stačí raz na stránku (je v kóde „Všetky dekory“, inak „Kopírovať skript“).
+3. **Kód:** „Kopírovať kód“ (jeden dekor) alebo „Všetky dekory tohto materiálu“ (celý zoznam + skript). Web woodplast.sk beží na Webflow: kód vložte do prvku **Embed** (WordPress: blok „Vlastné HTML“).
+   Skript stačí raz na stránku (Webflow: Page settings → Custom code → Before </body>; je aj v kóde „Všetky dekory“).
 4. Tlačidlo „Nakonfigurovať“ vedie na stránku s konfigurátorom (`embedLink`) s `#p=produkt&mat=…&decor=…` – skript z `embed-priklad.html`
    ho odovzdá do iframe (preposiela `#k=` aj `#p=`). Bez `embedLink` vedie priamo na adresu konfigurátora s `?p=…`.
 5. Widget má vlastné udalosti v štatistikách: `widget` (zobrazenie), `widget_decor` (zmena dekoru), `widget_cta` (klik na Nakonfigurovať).
