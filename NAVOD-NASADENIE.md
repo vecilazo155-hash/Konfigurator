@@ -4,7 +4,7 @@ Verzia konfigurátora: **128** (3. 11. 2026). Balík obsahuje všetko potrebné;
 
 ## Aktuálne nasadenie: GitHub Pages + subdoména konfigurator.woodplast.sk (od 24. 10. 2026)
 
-Konfigurátor beží na **https://vecilazo155-hash.github.io/Konfigurator/** z repozitára `vecilazo155-hash/Konfigurator`
+Konfigurátor beží na **https://konfigurator.woodplast.sk/** z repozitára `vecilazo155-hash/Konfigurator`
 (súbory `index.html`, `sw.js`, `embed-priklad.html`; nasadenie robí automaticky workflow `.github/workflows/pages.yml`
 pri každom push do `main`). Aktualizácie robí WoodPlast cez Claude priamo v repozitári – správca webu nič nenahráva.
 V hostovanej kópii je `forceMake: true`, takže dopyty idú cez Make aj z domény github.io.
@@ -12,9 +12,8 @@ V hostovanej kópii je `forceMake: true`, takže dopyty idú cez Make aj z domé
 Odporúčaný variant (po dohode so správcom webu 3. 11. 2026): konfigurátor beží **na samostatnej subdoméne** konfigurator.woodplast.sk, nie v iframe –
 lepšie na mobile, celá obrazovka, priame odkazy na konfigurácie, vlastná indexácia. Správca webu urobí jednorazovo: pridá DNS
 `CNAME konfigurator → vecilazo155-hash.github.io` a na web dá odkaz „3D konfigurátor“ (menu + tlačidlá na produktových stránkach).
-Iframe (krok 2) je len voliteľný – pre malé 3D widgety na produktových stránkach (SPRAVCA.md kap. 11). Po DNS sa do repozitára pridá súbor `CNAME` s obsahom
-`konfigurator.woodplast.sk` a v nastaveniach GitHub Pages sa zapne „Enforce HTTPS“ – konfigurátor potom beží na
-https://konfigurator.woodplast.sk/. Kroky 1 (FTP) nižšie sú alternatíva, ak by mal konfigurátor bežať priamo na hostingu webu.
+Iframe (krok 2) je len voliteľný – pre malé 3D widgety na produktových stránkach (SPRAVCA.md kap. 11). DNS CNAME aj vlastná doména v nastaveniach GitHub Pages sú nastavené (5. 11. 2026) – konfigurátor beží na
+https://konfigurator.woodplast.sk/ (adresa github.io sa naň presmeruje). Kroky 1 (FTP) nižšie sú alternatíva, ak by mal konfigurátor bežať priamo na hostingu webu.
 
 ## Čo je v balíku
 
