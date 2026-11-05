@@ -10588,6 +10588,7 @@ if(texLoad()) texReady(); else document.addEventListener('DOMContentLoaded', fun
 /* odkaz #k=: uložený koncept produktu sa neprepíše bez opýtania (applyConfig → draftDetach), odkaz z adresy zmizne po uložení (syncHash).
    #terasa/#fasada…: rozpracovaná práca produktu (koncept), inak predvolené hodnoty. fromLink: konfigurácia na obrazovke je z adresy #k= */
 var fromLink=(function(){ var h=location.hash.replace('#',''); if(h.indexOf('k=')===0){ var o=decodeConfig(h.slice(2)); if(o){ applyConfig(o); return true; } }
+  if(/[?&]cw=/.test(location.search)){ try{ var cwm=importCw(location.href); if(/^Načítané/.test(cwm)) return false; }catch(e){} }
   var pre=urlPreset(); if(pre){ try{ presetApply(pre); return false; }catch(e){} }
   if(own(HASH_PROD,h)) openWork(HASH_PROD[h],false); else if(isWidget()) openWork('terrace', false); return false; })();
 widgetInit();
