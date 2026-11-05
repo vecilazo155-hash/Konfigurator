@@ -1,7 +1,6 @@
 # WoodPlast 3D konfigurátor – hosting
 
 Verejná adresa: **https://konfigurator.woodplast.sk/**  
-(po nastavení DNS aj **https://konfigurator.woodplast.sk/**)
 
 Na stránku woodplast.sk sa vkladá cez `<iframe>` – hotový kód je v `embed-priklad.html`.
 Aktualizácie robí WoodPlast cez Claude priamo v tomto repozitári; adresa ani kód iframe sa nemenia.
