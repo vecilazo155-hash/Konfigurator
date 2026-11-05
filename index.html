@@ -876,7 +876,8 @@ html.embed header.top{display:none}html.embed .app{min-height:auto}
 .kpi span{font-size:12px;color:var(--muted)}.kpi b{font-family:'Nunito',sans-serif;font-size:26px;letter-spacing:-.01em}
 .statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}.statcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 .statcard h3{margin:0 0 10px;font-size:14px}.sbar{display:grid;grid-template-columns:minmax(90px,38%) 1fr auto;gap:8px;align-items:center;font-size:13px;margin:5px 0}
-.stl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}.stt{height:10px;background:var(--soft);border-radius:999px;overflow:hidden}.stt i{display:block;height:100%;background:var(--accent);border-radius:999px}
+.stl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}/* stĺpec grafu štatistík len v .sbar – samotné .stt je aj názov kroku v hlavičke (.stepbtn .stt), ktorý sa inak zmenil na 10 px vysoký sivý pás */
+.sbar .stt{height:10px;background:var(--soft);border-radius:999px;overflow:hidden}.sbar .stt i{display:block;height:100%;background:var(--accent);border-radius:999px}
 .sbar b{font-variant-numeric:tabular-nums;white-space:nowrap}.spark{display:flex;align-items:flex-end;gap:2px;height:70px;margin-top:4px}.spark i{flex:1;min-width:3px;background:var(--accent);border-radius:2px 2px 0 0;opacity:.85}
 .statshelp{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 18px;font-size:14px;line-height:1.55}.statshelp h2{margin:0 0 8px;font-size:17px}.statshelp code{background:var(--soft);padding:1px 5px;border-radius:5px;font-size:12px}
 html.widget header.top,html.widget aside.panel,html.widget .pricebar,html.widget .stage-tools,html.widget .stage-foot,html.widget .stepbadge,html.widget .touchhint,html.widget .stage-bars,html.widget .mini3d-bar,html.widget .toast{display:none!important}
