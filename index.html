@@ -300,7 +300,7 @@ details.more>.morein{padding:12px 14px 14px;display:flex;flex-direction:column;g
 .matlist li{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line)}
 .matlist li:last-child{border-bottom:0}
 .matlist .tag{flex:none;min-width:44px;text-align:center;font-weight:700;font-size:13px;padding:6px 8px;border-radius:8px;border:2px solid currentColor}
-.matlist .tag.d{color:#9E3A50;background:#FBE3E8}.matlist .tag.h{color:#2F7A3A;background:#E2F3E2}.matlist .tag.x{color:var(--muted);background:var(--soft)}
+.matlist .tag.d{color:#9E3A50;background:#FBE3E8}.matlist .tag.h{color:#2F7A3A;background:#E2F3E2}.matlist .tag.x{color:var(--muted);background:var(--soft)}.matlist li.tot{background:var(--soft)}.matlist li.tot .tag{font-weight:800}
 .matlist .qty{flex:none;font-family:'Nunito',sans-serif;font-weight:800;font-size:18px;min-width:52px}
 .matlist .nm{display:flex;flex-direction:column}.matlist .nm small{color:var(--muted)}
 .layers{display:flex;flex-wrap:wrap;gap:8px 16px;margin:6px 0}
@@ -4850,13 +4850,15 @@ function planData(){
   hgroups.forEach(function(x,i){ x.tag='H'+(i+1); }); poles.forEach(function(p){ p.tag=hg[p.L].tag; });
   /* ostatný materiál z rozpisu ceny (klipy, skrutky, terče, lišty, hmoždinky, štartovacie klipy, posledné skrutky, podložky…) – okrem dosiek
      a hranolov (sú vyššie po kusoch D1…, H1…), rezervy a prípravy dosiek, montáže a dopravy */
-  (r.lines||[]).forEach(function(l){ if(!/^(Terasové dosky|Fasádny obklad|Rezerva|Dosky navyše|Príprava materiálu|Konštrukčné hranoly|Montáž|Doprava)/.test(l.t)) extras.push({name:l.t, qty:l.s.split(' · ')[0].replace(/ × .*$/,'')}); });
-  return {r:r, dec:dec, groups:groups, hgroups:hgroups, pieces:pieces, poles:poles, drawings:drawings, extras:extras};
+  (r.lines||[]).forEach(function(l){ if(!/^(Terasové dosky|Fasádny obklad|Rezerva|Dosky navyše|Príprava materiálu|Konštrukčné hranoly|Montáž|Doprava|Schod – (terasové dosky|dosky|hranoly|lišta|montáž))/.test(l.t)) extras.push({name:l.t, qty:l.s.split(' · ')[0].replace(/ × .*$/,'')}); });
+  var schod=null; if(!r.facade){ try{ schod=schodPlan(r); }catch(e){ schod=null; } }
+  return {r:r, dec:dec, groups:groups, hgroups:hgroups, pieces:pieces, poles:poles, drawings:drawings, extras:extras, schod:schod};
 }
 function esc(t){ return String(t).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 function planSvg(d, P){
   var W=d.W, H=d.H, pad=Math.max(W,H)*0.08, fs=Math.max(W,H)/48, plan=d.plan, pAx=plan.planks.plankAxis, out=[];
-  out.push('<svg viewBox="'+(-pad)+' '+(-pad)+' '+(W+2*pad)+' '+(H+2*pad)+'" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Nákres: '+esc(d.title)+'">');
+  var bx0=0, by0=0, bx1=W, by1=H, SP=(!d.wall&&P.schod)?P.schod:null; if(SP) SP.pts.forEach(function(q){ bx0=Math.min(bx0,q[0]); by0=Math.min(by0,q[1]); bx1=Math.max(bx1,q[0]); by1=Math.max(by1,q[1]); });
+  out.push('<svg viewBox="'+(bx0-pad)+' '+(by0-pad)+' '+(bx1-bx0+2*pad)+' '+(by1-by0+2*pad)+'" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Nákres: '+esc(d.title)+'">');
   /* obrys */
   if(!d.wall){
     var pts=poly().map(function(q){ return (q[0]*10)+','+(q[1]*10); }).join(' ');
@@ -4880,6 +4882,17 @@ function planSvg(d, P){
     out.push('<rect x="'+x+'" y="'+y+'" width="'+ww+'" height="'+hh+'" fill="#7DBE82" fill-opacity=".85" stroke="#2F7A3A" stroke-width="'+(fs*0.05)+'"/>');
     var cx=x+ww/2, cy=y+hh/2; out.push('<text x="'+cx+'" y="'+cy+'" font-size="'+(fs*0.6)+'" fill="#1E5A26" font-weight="700" text-anchor="middle" dominant-baseline="central" paint-order="stroke" stroke="#fff" stroke-width="'+(fs*0.12)+'"'+(p.line.axis==='y'?' transform="rotate(-90 '+cx+' '+cy+')"':'')+'>'+p.tag+'</text>');
   });
+  /* schod: dosky stupňov, hranoly a obrys (lišta) */
+  if(SP) SP.shapes.forEach(function(sh){ if(sh.k==='b'&&!PLAN_LAYERS.boards) return; if(sh.k==='h'&&!PLAN_LAYERS.beams) return;
+    var pp=sh.pts.map(function(q){ return q[0]+','+q[1]; }).join(' '), cx=(sh.pts[0][0]+sh.pts[2][0])/2, cy=(sh.pts[0][1]+sh.pts[2][1])/2, rot=sh.vert?' transform="rotate(-90 '+cx+' '+cy+')"':'';
+    if(sh.k==='b'){ out.push('<polygon points="'+pp+'" fill="#F3DDB8" stroke="#B98A3E" stroke-width="'+(fs*0.06)+'"/>'); var tf=Math.min(fs*0.75, sh.w*0.75);
+      out.push('<text x="'+cx+'" y="'+cy+'" font-size="'+tf+'" fill="#8A5A12" font-weight="700" text-anchor="middle" dominant-baseline="central"'+rot+'>'+sh.tag+'</text>'); }
+    else if(sh.k==='h'){ out.push('<polygon points="'+pp+'" fill="#7DBE82" fill-opacity=".85" stroke="#2F7A3A" stroke-width="'+(fs*0.05)+'"/>');
+      if(sh.tag) out.push('<text x="'+cx+'" y="'+cy+'" font-size="'+(fs*0.6)+'" fill="#1E5A26" font-weight="700" text-anchor="middle" dominant-baseline="central" paint-order="stroke" stroke="#fff" stroke-width="'+(fs*0.12)+'"'+rot+'>'+sh.tag+'</text>'); }
+    else { out.push('<polygon points="'+pp+'" fill="none" stroke="#6B4A1E" stroke-width="'+(fs*0.14)+'"/>');
+      if(sh.tag){ var ex=(sh.pts[2][0]+sh.pts[3][0])/2, ey=(sh.pts[2][1]+sh.pts[3][1])/2, ox=ex-(sh.pts[0][0]+sh.pts[1][0])/2, oy=ey-(sh.pts[0][1]+sh.pts[1][1])/2, ol=Math.hypot(ox,oy)||1;
+        out.push('<text x="'+(ex+ox/ol*fs*0.9)+'" y="'+(ey+oy/ol*fs*0.9)+'" font-size="'+(fs*0.7)+'" fill="#6B4A1E" font-weight="700" text-anchor="middle" dominant-baseline="central">'+sh.tag+' · schod</text>'); } }
+  });
   /* klipy / skrutky */
   var conn=(plan.connectors&&plan.connectors.points)||[], lam=(P.r.facade&&fa.mat!=='wpc');
   if(conn.length && (PLAN_LAYERS.connectors||(lam&&PLAN_LAYERS.colored))){
@@ -4898,8 +4911,8 @@ function planSvg(d, P){
     out.push('<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="#fff" stroke="#55606A" stroke-width="'+(fs*0.12)+'"/>');
     out.push('<text x="'+(x+w/2)+'" y="'+(y+h/2)+'" font-size="'+(fs*0.7)+'" fill="#55606A" text-anchor="middle" dominant-baseline="central">'+w+'×'+h+' mm</text>'); });
   /* kóty celkovej šírky a hĺbky: pri terase z rozmerov zadania (pri T „A + B + E“, pri bazéne „B + C + D“), pri fasáde dĺžka a výška steny */
-  out.push('<text x="'+(W/2)+'" y="'+(-pad*0.35)+'" font-size="'+fs+'" fill="#4A5248" text-anchor="middle">'+esc(d.lx||'Šírka')+' = '+Math.round(W)+' mm</text>');
-  out.push('<text x="'+(W+pad*0.45)+'" y="'+(H/2)+'" font-size="'+fs+'" fill="#4A5248" text-anchor="middle" transform="rotate(90 '+(W+pad*0.45)+' '+(H/2)+')">'+esc(d.ly||'Hĺbka')+' = '+Math.round(H)+' mm</text>');
+  out.push('<text x="'+(W/2)+'" y="'+(by0-pad*(SP?0.6:0.35))+'" font-size="'+fs+'" fill="#4A5248" text-anchor="middle">'+esc(d.lx||'Šírka')+' = '+Math.round(W)+' mm</text>');
+  out.push('<text x="'+(bx1+pad*0.6)+'" y="'+(H/2)+'" font-size="'+fs+'" fill="#4A5248" text-anchor="middle" transform="rotate(90 '+(bx1+pad*0.6)+' '+(H/2)+')">'+esc(d.ly||'Hĺbka')+' = '+Math.round(H)+' mm</text>');
   out.push('</svg>'); return out.join('');
 }
 /* úvodná veta plánu montáže (pre koho je a že ukazuje narezané kusy, nie nákup) */
@@ -4915,13 +4928,15 @@ function renderPlanBody(){
   var P=planData(), mat=$('planMat'), dr=$('planDraw');
   if(P.err){ planErr(P); return; }
   $('planSub').textContent=(P.r.facade?'Fasáda':'Terasa')+' · '+P.dec.name+' · plocha '+fmt(P.r.area,2)+' m²';
-  var nb=P.r.lay.boards;
-  $('planIntro').textContent=PLAN_FOR+' Ukazuje, ako sa narežú a uložia kusy '+(P.r.facade?'obkladu':'dosiek')+' (D1, D2 …)'+(P.hgroups.length?' a hranolov (H1 …)':'')
-    +' – narežú sa z '+nb+' '+(nb===1?'dosky':'dosiek')+' 5,8 m. '+PLAN_PRICE;
+  var nb=P.r.facade?P.r.lay.boards:boardsAll(P.r), nbS=nb-P.r.lay.boards;
+  $('planIntro').textContent=PLAN_FOR+' Ukazuje, ako sa narežú a uložia kusy '+(P.r.facade?'obkladu':'dosiek')+' (D1, D2 …)'+(P.hgroups.length?' a hranolov (H1 …)':'')+(P.schod?' vrátane schodu (S1 …, SH1 …, L1 …)':'')
+    +' – narežú sa z '+nb+' '+(nb===1?'dosky':'dosiek')+' 5,8 m'+(nbS?' (terasa '+P.r.lay.boards+' + schod '+nbS+')':'')+'. '+PLAN_PRICE;
   var h='';
   P.groups.forEach(function(gx){ h+='<li><span class="tag d">'+gx.tag+'</span><span class="qty">'+gx.n+'×</span><span class="nm"><b>'+(P.r.facade?'Obklad ':'Doska ')+esc(P.dec.name)+'</b><small>'+gx.L+' mm × '+gx.Wd+' mm</small></span></li>'; });
   P.hgroups.forEach(function(gx){ h+='<li><span class="tag h">'+gx.tag+'</span><span class="qty">'+gx.n+'×</span><span class="nm"><b>Konštrukčný hranol</b><small>'+gx.L+' mm</small></span></li>'; });
+  if(P.schod) P.schod.rows.forEach(function(x){ h+='<li><span class="tag '+x.cls+'">'+x.tag+'</span><span class="qty">'+x.n+'×</span><span class="nm"><b>'+esc(x.name)+'</b><small>'+esc(x.sub)+'</small></span></li>'; });
   P.extras.forEach(function(e){ h+='<li><span class="tag x">·</span><span class="qty">'+esc(e.qty)+'</span><span class="nm"><b>'+esc(e.name)+'</b></span></li>'; });
+  if(P.schod) h+=schodTotalsHtml(P.r);
   mat.innerHTML=h;
   var lam=P.r.facade&&fa.mat!=='wpc', lay=[['boards','Doska'],['beams','Konštrukčný hranol'],['connectors',P.r.facade?(lam?'Skrutka':'Klip so skrutkou'):'Spojka so skrutkou']];
   if(lam) lay.push(['colored','Farebná skrutka']);
@@ -5900,7 +5915,7 @@ function schodCalc(H, topMm, rz, rzNote){
   var Gs=schodEdges(); if(!Gs.length) return null; var out={lines:[], sets:[], area:0}, multi=Gs.length>1;
   for(var i=0;i<Gs.length;i++){ var one=schodCalcOne(Gs[i], H, topMm, rz, rzNote); if(one.err) return {err:(multi?'Schod pri strane '+sideName(Gs[i].id)+': ':'')+one.err};
     if(multi) one.lines.forEach(function(l){ l.s=(l.s?l.s+' · ':'')+sideName(Gs[i].id); });
-    out.lines=out.lines.concat(one.lines); out.sets.push(one); out.area+=one.area; }
+    out.lines=out.lines.concat(one.lines); out.sets.push(one); out.area+=one.area; out.mat=out.mat||{boards58:0,hrBars:0,klipy:0,listy:0}; ['boards58','hrBars','klipy','listy'].forEach(function(k){ out.mat[k]+=one.mat[k]; }); }
   var f=out.sets[0]; out.geo=f.geo; out.rise=f.rise; out.rows=f.rows; out.faceRows=f.faceRows; out.drop=f.drop; out.edgeTop=f.edgeTop; return out;
 }
 function schodCalcOne(G, H, topMm, rz, rzNote){
@@ -5935,7 +5950,9 @@ function schodCalcOne(G, H, topMm, rz, rzNote){
   else { nl=Math.ceil(listaM/2.9); nlR=rz(nl); lp=per?MAT.listaPrice:rules.listaPrice; lines.push({t:per?'Schod – lišta '+MAT.short+' 5,8 m ('+ltx+fmt(listaM,2)+' m)':'Schod – lišta plochá 2,9 m ('+ltx+fmt(listaM,2)+' m)', s:nlR+' ks × '+eur(lp)+rzNote(nl,nlR), v:itemPrice(nlR,lp)}); }
   var ns=Math.ceil(listaM*2.8); lines.push({t:'Schod – skrutka k lište', s:ns+' ks × '+eur(per?0.46:rules.listaScrewPrice), v:itemPrice(ns,per?0.46:rules.listaScrewPrice)});
   if(!self) lines.push({t:'Schod – montáž stupňov', s:fmt(area,2)+' m² × '+eur(rules.montazSchod), v:itemPrice(area,rules.montazSchod)});
-  return {lines:lines, geo:G, rise:rise, rows:rows, area:area, faceRows:faceRows, drop:G.drop, edgeTop:edgeTop};
+  var ret={lines:lines, geo:G, rise:rise, rows:rows, area:area, faceRows:faceRows, drop:G.drop, edgeTop:edgeTop};
+  ret.parts=schodParts(ret); ret.mat={boards58:schodFfd(ret.parts.boards.concat(ret.parts.face),5800), hrBars:hrB, klipy:kl, listy:nlR};
+  return ret;
 }
 function schodText(){ var Gs=schodEdges(); if(!Gs.length) return ''; return Gs.map(function(G){ var rise=(state.height+G.drop*10)/(G.n+1); return 'Schod: '+G.n+' '+lnPl(G.n,'stupeň','stupne','stupňov')+' pri strane '+sideName(G.id)+', výška stupňa '+fmt(rise/10,1)+' cm'+(G.drop?' (zem pri schode nižšie o '+G.drop+' cm)':'')+', hĺbka '+G.d+' cm, dĺžka '+fmt(G.Lu/100,2)+' m, čelo a boky: '+schodFaceName(G.face); }).join('\n'); }
 function cornersText(){ if(!cornersOn()) return ''; var c=cornersCfg(); return 'Nerovný podklad (rozdiel výšky v rohoch): vľavo hore '+c.a+' cm, vpravo hore '+c.b+' cm, vpravo dole '+c.c+' cm, vľavo dole '+c.d+' cm'; }
@@ -8923,7 +8940,7 @@ function sumGroups(r){
     return ls.map(function(l){ return l.t; }).join(', ');
   }
   /* počty položiek skupiny (sumQty) – pri dvoch bránach s názvom brány */
-  function qty(k, g){ return g.lines.map(function(l){ var x=sumQty(l); return x&&k==='gates'&&g.lines.length>1?(/^Bránička/.test(l.t)?'bránička ':'posuvná brána ')+x:x; }).filter(Boolean).join(' · '); }
+  function qty(k, g){ if(k==='schod'&&r.schod&&r.schod.mat) return schodMatTxt(r); return g.lines.map(function(l){ var x=sumQty(l); return x&&k==='gates'&&g.lines.length>1?(/^Bránička/.test(l.t)?'bránička ':'posuvná brána ')+x:x; }).filter(Boolean).join(' · '); }
   var rows=[];
   order.forEach(function(k){
     var g=G[k];
@@ -8992,7 +9009,7 @@ function renderSummary(r){
   /* obec zadaná, ale nenájdená: doprava v sume nie je – zvýraznené v riadku dopravy aj v štítku (predtým suma len potichu klesla) */
   var miss=cityMissing();
   $('iArea').textContent=fmt(r.areaAll!=null?r.areaAll:r.area,2)+' m²'; /* plot: plocha plota a brán */
-  $('iBoards').textContent=r.lay.boards+' ks';
+  $('iBoards').textContent=boardsAll(r)+' ks';
   $('iTotal').textContent=eur(rv.total);
   var sc=$('iScope'); sc.textContent=priceScope(); sc.classList.toggle('warn', miss);
   stepsSync(r); faWallSync(); pbRender(r); askSync(r); actSync(r); draftTotalSync(r);
@@ -11096,6 +11113,61 @@ function ppImages(){
   step();
 }
 function bindWidget(){ var b=$('ppBtn'); if(b) b.addEventListener('click', function(){ ppOpen(); }); var bk=$('ppBack'); if(bk) bk.addEventListener('click', closeViews); }
+
+/* ---------- Schod v pláne montáže a v celkových počtoch materiálu (12. 11. 2026) ----------
+   Kusy schodu (dosky stupňov S1…, obloženie čela O1…, hranoly SH1…, lišty L1…) sú v zozname materiálu plánu aj v nákrese pri svojej strane
+   terasy; počty dosiek 5,8 m, hranolov, klipov a líšt sa pripočítajú k terase (plán, zhrnutie, lišta pod 3D). */
+function schodCut(L, stock){ var out=[]; L=Math.round(L); while(L>stock){ out.push(stock); L-=stock; } if(L>0) out.push(L); return out; }
+function schodFfd(ls, stock){ var bins=[]; ls.slice().sort(function(a,b){ return b-a; }).forEach(function(l){ for(var i=0;i<bins.length;i++){ if(bins[i]>=l){ bins[i]-=l; return; } } bins.push(stock-l); }); return bins.length; }
+function schodParts(S){
+  var G=S.geo, MAT=curMat(), Lmm=G.Lu*10, dmm=Math.round(G.d*10), nh=Math.ceil(G.Lu/38)+1, face=G.face==='board';
+  var P={boards:[], face:[], poles:[], listy:[], lstock:(G.face==='wide'||MAT.perPiece)?5800:2900};
+  P.lname=G.face==='wide'?'Lišta široká plochá 142 × 13 mm':(MAT.perPiece?'Lišta '+MAT.short:'Lišta plochá');
+  for(var i=1;i<=G.n;i++){
+    for(var rw=0;rw<S.rows;rw++) P.boards=P.boards.concat(schodCut(Lmm,5800));
+    for(var k=0;k<nh;k++) P.poles.push(dmm);
+    P.listy=P.listy.concat(schodCut(Lmm,P.lstock),[dmm,dmm]);
+    for(var f=0;face&&f<S.faceRows;f++) P.face=P.face.concat(schodCut(Lmm,5800),[dmm,dmm]);
+  }
+  if(S.edgeTop){ P.listy=P.listy.concat(schodCut(Lmm,P.lstock)); for(var f2=0;face&&f2<S.faceRows;f2++) P.face=P.face.concat(schodCut(Lmm,5800)); }
+  return P;
+}
+/* kusy a tvary schodov pre plán montáže */
+function schodPlan(r){
+  var sets=(r.schod&&r.schod.sets)||[]; if(!sets.length) return null;
+  var MAT=curMat(), bw=MAT.boardW, gap=curClip().gap*10, out={rows:[], shapes:[], pts:[]}, B={}, F={}, Hh={}, Ll={}, lname='';
+  var add=function(o,L){ (o[L]=o[L]||{L:L,n:0}).n++; };
+  sets.forEach(function(S){ var P=S.parts||schodParts(S); lname=P.lname; P.boards.forEach(function(L){ add(B,L); }); P.face.forEach(function(L){ add(F,L); }); P.poles.forEach(function(L){ add(Hh,L); }); P.listy.forEach(function(L){ add(Ll,L); }); });
+  var grp=function(o, pre){ return Object.keys(o).map(function(k){ return o[k]; }).sort(function(a,b){ return b.L-a.L; }).map(function(x,i){ x.tag=pre+(i+1); return x; }); };
+  var gb=grp(B,'S'), gf=grp(F,'O'), gh=grp(Hh,'SH'), gl=grp(Ll,'L');
+  gb.forEach(function(x){ out.rows.push({cls:'d', tag:x.tag, n:x.n, name:'Doska schodu '+MAT.short+' '+curDecor().name, sub:x.L+' mm × '+bw+' mm'}); });
+  gf.forEach(function(x){ out.rows.push({cls:'d', tag:x.tag, n:x.n, name:'Doska – obloženie čela a bokov schodu', sub:x.L+' mm × '+bw+' mm'}); });
+  gh.forEach(function(x){ out.rows.push({cls:'h', tag:x.tag, n:x.n, name:'Hranol schodu '+r.H.hr.label.replace(' mm',''), sub:x.L+' mm'}); });
+  gl.forEach(function(x){ out.rows.push({cls:'x', tag:x.tag, n:x.n, name:lname+' – schod', sub:x.L+' mm'}); });
+  /* tvary do nákresu (mm): stupne smerom von od hrany terasy, stred na strede strany – rovnako ako v 3D */
+  sets.forEach(function(S){ var G=S.geo, E=G.E, ux=(E.b[0]-E.a[0])/E.len, uy=(E.b[1]-E.a[1])/E.len, nx=E.nx, ny=E.ny, mx=(E.a[0]+E.b[0])/2*10, my=(E.a[1]+E.b[1])/2*10, L=G.Lu*10, d=G.d*10, nh=Math.ceil(G.Lu/38)+1;
+    var quad=function(o0,o1,t0,t1){ return [[mx+ux*t0+nx*o0,my+uy*t0+ny*o0],[mx+ux*t1+nx*o0,my+uy*t1+ny*o0],[mx+ux*t1+nx*o1,my+uy*t1+ny*o1],[mx+ux*t0+nx*o1,my+uy*t0+ny*o1]]; };
+    var vert=Math.abs(uy)>Math.abs(ux);
+    for(var i=1;i<=G.n;i++){ var off=(i-1)*d;
+      for(var rw=0;rw<S.rows;rw++){ var o=off+rw*(bw+gap); if(o+bw>off+d+1) break; var segs=schodCut(L,5800), t=-L/2;
+        segs.forEach(function(sl){ var q=quad(o,o+bw,t,t+sl); out.shapes.push({k:'b', pts:q, tag:(B[sl]||{}).tag||'S', vert:vert, w:bw}); t+=sl; }); }
+      for(var k=0;k<nh;k++){ var tt=(nh===1?0:(k/(nh-1)-0.5))*(L-100); out.shapes.push({k:'h', pts:quad(off+10,off+d-10,tt-15,tt+15), tag:k===0&&i===1?((Hh[d]||{}).tag||'SH'):'', vert:!vert}); }
+      var oq=quad(off,off+d,-L/2,L/2); out.shapes.push({k:'o', pts:oq, tag:i===1?((gl[0]||{}).tag||''):'', vert:vert}); oq.forEach(function(p){ out.pts.push(p); });
+    } });
+  out.groups={b:gb, f:gf, h:gh, l:gl};
+  return out;
+}
+function schodMatTxt(r){ var m=r.schod&&r.schod.mat; if(!m) return '';
+  return m.boards58+' '+lnPl(m.boards58,'doska','dosky','dosiek')+' 5,8 m · '+m.hrBars+' '+lnPl(m.hrBars,'hranol','hranoly','hranolov')+' · '+m.klipy+' '+lnPl(m.klipy,'klip','klipy','klipov')+' · '+m.listy+' '+lnPl(m.listy,'lišta','lišty','líšt'); }
+/* dosky 5,8 m spolu: terasa + schod */
+function boardsAll(r){ return (r.lay?r.lay.boards:0)+((r.schod&&r.schod.mat)?r.schod.mat.boards58:0); }
+function schodTotalsHtml(r){
+  var m=r.schod&&r.schod.mat; if(!m) return ''; var S=r.plan&&r.plan.summary, nb=r.lay.boards, np=(S&&state.ctype!=='custom')?S.poles.stockBarsUsed:0, nc=S?S.connectorsTotal:0;
+  var row=function(n, name, sub){ return '<li class="tot"><span class="tag x">Σ</span><span class="qty">'+n+' ks</span><span class="nm"><b>'+name+'</b><small>'+sub+'</small></span></li>'; };
+  return row(nb+m.boards58, 'Dosky 5,8 m spolu', 'terasa '+nb+' + schod '+m.boards58)
+    +(np?row(np+m.hrBars, 'Hranoly 6 m spolu', 'terasa '+np+' + schod '+m.hrBars):'')
+    +row(nc+m.klipy, 'Klipy so skrutkou spolu', 'terasa '+nc+' + schod '+m.klipy);
+}
 
 followUpOpen();
 })();
