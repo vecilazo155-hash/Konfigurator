@@ -9130,7 +9130,7 @@ function decodeCw(bytes){
   var m=vi(), k=0, keys={};
   for(var j=0;j<m;j++){
     k+=vi(); var t=vi();
-    if(t===0||t===2) keys[k]={t:t, v:vi()};
+    if(t===0||t===1||t===2){ var vv=0; try{ vv=vi(); }catch(e){ if(j<m-1) throw e; } keys[k]={t:t, v:vv}; }
     else if(t===3) keys[k]={t:t, v:st()};
     else throw new Error('type '+t);
   }
