@@ -2,7 +2,7 @@
 <html lang="sk" data-theme="light">
 <head>
 <meta charset="utf-8">
-<meta name="wp3d-version" content="135">
+<meta name="wp3d-version" content="136">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>WoodPlast – 3D konfigurátor terasy, fasády, plota, slnolamov a interiéru</title>
 <!-- ======================================================================================================
@@ -2418,7 +2418,7 @@ var fa = {arr:'1-wall', align:'bottom', walls:{a:faWallDefault(), b:faWallDefaul
   dir:'vertical', method:'classic', mat:'lamel-solo', color:'oak', ctype:'aluminium', sub:'metal', ins:0};
 function faWallKeys(){ return (FA_ARR.filter(function(a){return a.id===fa.arr;})[0]||FA_ARR[3]).walls; }
 /* rozmery steny fasády: dĺžka do 15 m, výška do 10 m (aj trojpodlažný dom; výpočet aj 3D overené po 15 m) */
-var FA_WALL_MIN=10, FA_WALL_LMAX=1500, FA_WALL_HMAX=1000;
+var FA_WALL_MIN=10, FA_WALL_LMAX=3000, FA_WALL_HMAX=1000;   /* dĺžka steny do 30 m (26. 11. 2026, predtým 15 m) */
 function faValidate(){
   ERR_AT=null;
   var ks=faWallKeys();
