@@ -2,6 +2,7 @@
 <html lang="sk">
 <head>
 <meta charset="utf-8">
+<meta name="wp3d-version" content="134">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>WoodPlast – 3D konfigurátor terasy, fasády, plota, slnolamov a interiéru</title>
 <!-- ======================================================================================================
@@ -902,6 +903,7 @@ html.widget .stage{position:absolute!important;inset:0;height:auto!important;min
   .stagebar[data-bar="steps"] .chip{min-height:34px;padding:0 10px;font-size:12.5px;white-space:nowrap;flex:none}
 }
 @media (max-width: 900px) and (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .stagebar[data-bar="steps"]{background:rgba(45,42,38,.94)} }
+.sw i{overflow:hidden}.swsvg{display:block;width:100%;height:100%;pointer-events:none}
 </style>
 </head>
 <body>
@@ -3428,7 +3430,7 @@ function renderFencePanel(){
     +'<p class="note">'+(deck?'Výška je počet radov dosiek 14,3 cm s medzerou medzi nimi.':'Výška je počet radov dosiek po 14,5 cm.')+'</p>'
     +(deck?'<details class="more" data-more="fegap"'+moreOpen('fegap')+'><summary><span>Ďalšie možnosti</span><small class="morev">medzera '+fe.gap+' mm</small></summary><div class="morein"><div class="fields"><label class="f">Medzera medzi doskami (mm)<input type="number" min="0" max="100" step="1" id="feGap" value="'+esc(fe.gap)+'"></label></div><p class="note">Doska 14,3 cm + zvolená medzera. Pri medzere 0 mm je plot plný.</p></div></details>':'');
   h+='<p class="error" id="feRowErr" data-ferr hidden></p></div>';
-  h+='<div class="sec" data-step="3"><h3>Dekor</h3><div class="swatches" role="group" aria-label="Dekor plota">'+feDecors().map(function(d){ return '<button type="button" class="sw" data-fedec="'+d.id+'" aria-pressed="'+(d.id===fe.decor)+'"><i style="background:'+decorBg(d)+'"></i><span>'+d.name+'</span></button>'; }).join('')+'</div></div>';
+  h+='<div class="sec" data-step="3"><h3>Dekor</h3><div class="swatches" role="group" aria-label="Dekor plota">'+feDecors().map(function(d){ return '<button type="button" class="sw" data-fedec="'+d.id+'" aria-pressed="'+(d.id===fe.decor)+'">'+decorI(d)+'<span>'+d.name+'</span></button>'; }).join('')+'</div></div>';
   h+=stepHead(4)+'<div class="sec" data-step="4"><h3>Stĺpiky</h3>'+seg('feposts',[['1','Hliníkové 60 × 60 od WoodPlast'],['0','Mám vlastné alebo betónové stĺpiky']],fe.posts?'1':'0')
     +(deck?'<p class="note">Betónové pätky pod stĺpiky v určených rozostupoch si zabetónuje zákazník.</p>'
       :'<h3 id="feWallL">Je na mieste múrik alebo základ?</h3><div class="seg" role="group" aria-labelledby="feWallL">'+[['wall','Áno, plot sa kotví na múrik'],['none','Nie, betónové pätky']].map(function(o){ return '<button type="button" data-fewall="'+o[0]+'" aria-pressed="'+(o[0]===fe.wall)+'">'+o[1]+'</button>'; }).join('')+'</div><p class="note" id="feWallNote">'+feWallNote()+'</p>')
@@ -3907,6 +3909,17 @@ function lnStartSpin(){
 function swBg(tex, c1, c2){ c1=c1||'#B99B72'; c2=c2||c1;
   return c1+';background-image:'+(tex?"url('"+tex+"')":'repeating-linear-gradient(90deg,'+c1+','+c1+' 12px,'+c2+' 12px,'+c2+' 13px)')+';background-position:center;background-size:'+(tex?'cover':'auto')+';background-repeat:'+(tex?'no-repeat':'repeat'); }
 function decorBg(d){ return swBg(TEX[d.id], d.c1, d.c2); }
+/* vzorka dekoru vnútri <i> ako SVG: farba je <rect>, fotka <image> (href aj xlink:href pre staršie Safari) – nezávisí od CSS pozadia prvku;
+   bez fotky pruhy (alebo šikmý prechod – diag) vo farbách dekoru */
+function swSvg(tex, c1, c2, diag){ c1=c1||'#B99B72';
+  var h='<svg class="swsvg" aria-hidden="true" focusable="false" width="100%" height="100%">', id, x, d='';
+  if(!tex&&diag&&c2){ swSvg.n=(swSvg.n||0)+1; id='swg'+swSvg.n; h+='<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="'+c1+'"/><stop offset="1" stop-color="'+c2+'"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#'+id+')"/>'; }
+  else h+='<rect width="100%" height="100%" fill="'+c1+'"/>';
+  if(tex) h+='<image href="'+tex+'" xlink:href="'+tex+'" width="100%" height="100%" preserveAspectRatio="xMidYMid slice"/>';
+  else if(!diag&&c2&&c2!==c1){ for(x=12.5;x<300;x+=13) d+='M'+x+' 0V300'; h+='<path d="'+d+'" stroke="'+c2+'" stroke-width="1" fill="none"/>'; }
+  return h+'</svg>'; }
+function swI(tex, c1, c2){ return '<i style="background:'+swBg(tex, c1, c2)+'">'+swSvg(tex, c1, c2)+'</i>'; }
+function decorI(d){ return swI(TEX[d.id], d.c1, d.c2); }
 /* pôdorys uloženia na karte (pohľad zhora): ostenie otvoru, os otvoru a tri slnolamy 10 × 5,3 cm natočené o uhol uloženia, s rovnakou mierkou
    a medzerou na všetkých kartách, aby sa dali porovnať; farba dekoru cez --lnwood (renderLouversControls) */
 function lnPicSvg(m){
@@ -3930,7 +3943,7 @@ function bindLouvers(){
   var box=$('louversPanel');
   $('lnMounts').innerHTML=Object.keys(LN_MOUNTS).map(function(m){ var M=LN_MOUNTS[m];
     return '<button type="button" class="opt optc" data-lmount="'+m+'" aria-pressed="false">'+lnPicSvg(m)+'<span class="ot"><b>'+M.name+'</b><small>'+M.sub+'</small></span><span class="ov" data-lnov="'+m+'"></span></button>'; }).join('');
-  $('lnDecors').innerHTML=LN_DECORS.map(function(d){ return '<button type="button" class="sw" data-ldec="'+d.id+'" aria-pressed="false"><i style="background:'+decorBg(d)+'"></i><span>'+d.name+'</span></button>'; }).join('');
+  $('lnDecors').innerHTML=LN_DECORS.map(function(d){ return '<button type="button" class="sw" data-ldec="'+d.id+'" aria-pressed="false">'+decorI(d)+'<span>'+d.name+'</span></button>'; }).join('');
   $('lnRails').innerHTML=LN_RAILS.map(function(r){ return '<button type="button" class="sw" data-lrail="'+r.id+'" aria-pressed="false" title="'+r.ral+'"><i style="background:linear-gradient(135deg, rgba(255,255,255,.28), rgba(255,255,255,0) 45%, rgba(0,0,0,.12)), '+r.hex+';box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)"></i><span>'+r.name+'<small style="display:block;color:var(--muted);font-weight:500">'+r.ral+'</small></span></button>'; }).join('')+'<button type="button" class="sw" data-lrail="custom" aria-pressed="false"><i style="background:conic-gradient(#C2B078,#AF2B1E,#1E2460,#2F4538,#293133,#45322E,#C2B078);"></i><span>Vlastná RAL<small style="display:block;color:var(--muted);font-weight:500">zadáte číslo</small></span></button>';
   var ralBox=$('lnRalBox'); if(!ralBox){ ralBox=document.createElement('div'); ralBox.id='lnRalBox'; ralBox.hidden=true; ralBox.className='ralbox'; $('lnRails').insertAdjacentElement('afterend', ralBox); }
   ralBox.innerHTML='<label class="f" style="flex:1">Číslo RAL (štyri číslice, napr. 7016)<input type="text" inputmode="numeric" maxlength="4" id="lnRal" placeholder="7016" style="font-size:22px;font-weight:700;letter-spacing:.08em;height:52px"></label><span class="ralchip" id="lnRalChip" aria-hidden="true"></span>';
@@ -4550,7 +4563,7 @@ function renderFacadePanel(){
   if(ks.some(function(k){ return fa.walls[k].o.length>0; })) h+='<div class="sec" data-step="2"><h3>Kladenie okolo okien a dverí</h3>'+seg('fmeth',[['classic','Celá stena'],['inbetween-full-height','Medzi otvormi'],['inbetween-minimal','Len vo výške okien']],fa.method)+'</div>';
   /* krok 3: obklad, farba a smer kladenia */
   /* krok 3: obklad ako karty s cenou za meter dosky (farby sa rozbalia len pri zvolenom obklade), smer kladenia s obrázkom */
-  var sws='<div class="swatches" role="group" aria-label="Farba obkladu">'+M.colors.map(function(c){ var C=FA_COL[c], tk=fa.mat==='wpc'?(TEX[FA2DEC[c]]?FA2DEC[c]:null):(M.perPiece?(TEX[c]?c:null):lamTexKey(fa.mat,c)); return '<button type="button" class="sw" data-fcol="'+c+'" aria-pressed="'+(c===fa.color)+'"><i style="background:'+swBg(tk?TEX[tk]:'', C[1], 'rgba(0,0,0,.18)')+'"></i><span>'+C[0]+'</span></button>'; }).join('')+'</div>';
+  var sws='<div class="swatches" role="group" aria-label="Farba obkladu">'+M.colors.map(function(c){ var C=FA_COL[c], tk=fa.mat==='wpc'?(TEX[FA2DEC[c]]?FA2DEC[c]:null):(M.perPiece?(TEX[c]?c:null):lamTexKey(fa.mat,c)); return '<button type="button" class="sw" data-fcol="'+c+'" aria-pressed="'+(c===fa.color)+'">'+swI(tk?TEX[tk]:'', C[1], 'rgba(0,0,0,.18)')+'<span>'+C[0]+'</span></button>'; }).join('')+'</div>';
   h+=stepHead(3)+'<div class="sec" data-step="3"><h3>Obklad a farba</h3><div class="opts" role="group" aria-label="Obklad">'
     +Object.keys(FA_MAT).map(function(k){ var F=FA_MAT[k], on=k===fa.mat;
       return '<button type="button" class="opt optc optm" data-fmat="'+k+'" aria-pressed="'+on+'"><span class="ot"><b>'+F.label+'</b><small>'+FA_MAT_TXT[k]+' · '+F.colors.length+' '+lnPl(F.colors.length,'farba','farby','farieb')+'</small></span><span class="ov"><b>'+eur(Math.round(faBmPrice(F)*100)/100)+'</b><small>za meter dosky</small></span></button>'+(on?sws:''); }).join('')+'</div>'
@@ -4720,7 +4733,7 @@ function renderInteriorPanel(){
     h+='<div class="wallcard fwcard'+(k===inWallCur()?'':' off')+'" data-iwcard="'+k+'"><h4 class="fwh">Stena '+K+'</h4>'+c+'</div>'; });
   h+='</div>';
   /* krok 3: materiál ako karty s cenou za panel (dekory pri zvolenom), smer kladenia */
-  var sws='<div class="swatches" role="group" aria-label="Dekor">'+M.decors.map(function(d){ return '<button type="button" class="sw" data-idec="'+d.id+'" aria-pressed="'+(d.id===iw.decor)+'"><i style="background:'+inSwBg(d)+'"></i><span>'+esc(d.name)+'<br><small>'+eur(d.price)+'</small></span></button>'; }).join('')+'</div>';
+  var sws='<div class="swatches" role="group" aria-label="Dekor">'+M.decors.map(function(d){ return '<button type="button" class="sw" data-idec="'+d.id+'" aria-pressed="'+(d.id===iw.decor)+'"><i style="background:'+inSwBg(d)+'">'+swSvg(TEX[d.id], d.c1, d.c2, true)+'</i><span>'+esc(d.name)+'<br><small>'+eur(d.price)+'</small></span></button>'; }).join('')+'</div>';
   h+=stepHead(3)+'<div class="sec" data-step="3"><h3>Panely a dekor</h3><div class="opts" role="group" aria-label="Panely">'
     +inMatKeys().map(function(k){ var F=IN_MAT[k], on=k===iw.mat, mp=inMinPrice(F);
       return '<button type="button" class="opt optc optm" data-imat="'+k+'" aria-pressed="'+on+'"><span class="ot"><b>'+F.label+'</b><small>'+F.sub+' · panel '+fmt(F.w/100,2)+' × '+fmt(F.l/100,2)+' m · '+F.decors.length+' '+lnPl(F.decors.length,'dekor','dekory','dekorov')+'</small></span><span class="ov"><b>'+(F.decors.some(function(d){ return d.price!==mp; })?'od ':'')+eur(mp)+'</b><small>za panel</small></span></button>'+(on?sws:''); }).join('')+'</div>'
@@ -5546,7 +5559,7 @@ function swatchRender(){
   var big=cur.tex?'<div class="swbig" style="background-image:url('+cur.tex+')"></div>':'<div class="swbig" style="background:'+cur.c1+'"></div>';
   var h='<div class="swtop">'+big+(photo?'<div class="swreal"><img src="'+photo+'" alt="Realizácia WoodPlast – '+esc(PROD_NAMES[state.product]||'')+'"><small>Realizácia WoodPlast · '+esc(PROD_NAMES[state.product]||'')+'</small></div>':'')+'</div>';
   h+='<h2 class="swname">'+esc(cur.name)+'</h2><p class="note">'+esc(D.mat)+' · '+esc(D.dims)+'. Fotka dekoru je v mierke makra – skutočná farba závisí od svetla a šarže; vzorku vám pošleme.</p><p><button type="button" class="cta" data-samples-go="1">Objednať vzorky zdarma</button></p>';
-  h+='<div class="swstrip" role="group" aria-label="Dekory">'+D.list.map(function(d){ return '<button type="button" class="sw" data-swdec="'+esc(d.id)+'" aria-pressed="'+(d.id===cur.id)+'"><i style="background:'+swBg(d.tex, d.c1, d.c1)+'"></i><span>'+esc(d.name)+'</span></button>'; }).join('')+'</div>';
+  h+='<div class="swstrip" role="group" aria-label="Dekory">'+D.list.map(function(d){ return '<button type="button" class="sw" data-swdec="'+esc(d.id)+'" aria-pressed="'+(d.id===cur.id)+'">'+swI(d.tex, d.c1, d.c1)+'<span>'+esc(d.name)+'</span></button>'; }).join('')+'</div>';
   box.innerHTML=h;
   box.querySelectorAll('[data-swdec]').forEach(function(b){ b.addEventListener('click',function(){ D.set(b.dataset.swdec); swatchRender(); }); });
 }
@@ -6134,7 +6147,7 @@ function samplesRender(){
   var box=$('askSamplesBox'), c=$('askSamples'); if(!box||!c) return; box.hidden=!c.checked; if(!c.checked) return;
   var D=decorList(); if(!SAMPLES.length&&D.cur) SAMPLES=[D.cur]; SAMPLES=SAMPLES.filter(function(id){ return D.list.some(function(d){ return d.id===id; }); });
   box.innerHTML='<p class="moreh" style="margin-top:0">Vyberte až '+SAMPLES_MAX+' dekory ('+esc(D.mat)+') – pošleme vám ich poštou zdarma</p><div class="swstrip sm" role="group" aria-label="Vzorky">'
-    +D.list.map(function(d){ var on=SAMPLES.indexOf(d.id)>=0; return '<button type="button" class="sw" data-sample="'+esc(d.id)+'" aria-pressed="'+on+'"><i style="background:'+swBg(d.tex, d.c1, d.c1)+'"></i><span>'+esc(d.name)+'</span></button>'; }).join('')+'</div>'
+    +D.list.map(function(d){ var on=SAMPLES.indexOf(d.id)>=0; return '<button type="button" class="sw" data-sample="'+esc(d.id)+'" aria-pressed="'+on+'">'+swI(d.tex, d.c1, d.c1)+'<span>'+esc(d.name)+'</span></button>'; }).join('')+'</div>'
     +'<p class="note" id="askSamplesNote" style="margin:4px 0 0">'+(SAMPLES.length?'Vybrané: '+esc(samplesList().map(function(s){ return s.name; }).join(', ')):'Vyberte aspoň jeden dekor.')+'</p>';
 }
 function samplesOrder(){ var c=$('askSamples'); if(!c) return; askShow(); c.checked=true; samplesRender(); var b=$('askSamplesBox'); if(b){ b.scrollIntoView({block:'center'}); } }
@@ -8488,7 +8501,7 @@ function renderControls(){
   keepFocus(dc, function(){ dc.innerHTML='';
   matColors().forEach(function(d){
     var b=document.createElement('button'); b.type='button'; b.className='sw'; b.dataset.decor=d.id; b.setAttribute('aria-pressed', String(d.id===state.decor));
-    var i=document.createElement('i'); i.style.cssText='background:'+decorBg(d);
+    var i=document.createElement('i'); i.style.cssText='background:'+decorBg(d); i.innerHTML=swSvg(TEX[d.id], d.c1, d.c2);
     var s=document.createElement('span'); s.textContent=d.name;
     b.appendChild(i); b.appendChild(s);
     b.addEventListener('click',function(){ state.decor=d.id; TER_DECPREF=d.id; update(); });
@@ -9202,7 +9215,7 @@ function texLoad(){ var el=document.getElementById('wpTex'), t; if(!el||!el.text
 /* po načítaní fotiek: vzorky a 3D s fotkami namiesto farebnej náhrady (náhradné textúry z keše vypadnú, clearGroup ich uvoľní) */
 function texReady(){
   if(three) three.texCache={};
-  LN_DECORS.forEach(function(d){ var i=document.querySelector('[data-ldec="'+d.id+'"] i'); if(i) i.style.cssText='background:'+decorBg(d); });
+  LN_DECORS.forEach(function(d){ var i=document.querySelector('[data-ldec="'+d.id+'"] i'); if(i){ i.style.cssText='background:'+decorBg(d); i.innerHTML=swSvg(TEX[d.id], d.c1, d.c2); } });
   if(!document.querySelector('.main').hidden){ renderControls(); if(three&&last) build3D(last); }
 }
 function initThree(){
@@ -11083,7 +11096,7 @@ function ppRender(){
     +'<div class="pprow"><label class="f"><span class="note">Produkt</span><select id="ppProd">'+['terrace','facade','fence','louvers','interior'].map(function(p){ return '<option value="'+p+'"'+(p===PP.p?' selected':'')+'>'+PROD_NAMES[p]+'</option>'; }).join('')+'</select></label>'
     +'<label class="f"><span class="note">Materiál</span><select id="ppMat">'+ms.map(function(m){ return '<option value="'+esc(m.id)+'"'+(m.id===PP.m?' selected':'')+'>'+esc(m.label)+'</option>'; }).join('')+'</select></label>'
     +'<label class="f" style="flex:1 1 240px"><span class="note">Priečinok s obrázkami na webe (poster)</span><input type="text" id="ppDir" value="'+esc(PP.dir)+'"></label></div>'
-    +'<div class="swatches ppsw" role="group" aria-label="Dekor">'+ds.map(function(d){ return '<button type="button" class="sw" data-ppd="'+esc(d.id)+'" aria-pressed="'+(d.id===PP.d)+'"><i style="background:'+decorBg({id:d.id, c1:d.c1, c2:d.c1})+'"></i><span>'+esc(d.name)+'</span></button>'; }).join('')+'</div>'
+    +'<div class="swatches ppsw" role="group" aria-label="Dekor">'+ds.map(function(d){ return '<button type="button" class="sw" data-ppd="'+esc(d.id)+'" aria-pressed="'+(d.id===PP.d)+'">'+decorI({id:d.id, c1:d.c1, c2:d.c1})+'<span>'+esc(d.name)+'</span></button>'; }).join('')+'</div>'
     +'<h2 style="font-size:16px;margin:14px 0 6px">Kód pre '+esc(PROD_NAMES[PP.p])+' · '+esc(cur.name)+'</h2>'
     +'<textarea id="ppCode" rows="9" readonly style="width:100%;font-size:11.5px;font-family:ui-monospace,Menlo,monospace">'+esc(ppSnippet(PP.p, PP.m, PP.d, cur.name))+'</textarea>'
     +'<div class="exportbtns" style="margin-top:8px"><button type="button" class="chip" id="ppCopy">Kopírovať kód</button><button type="button" class="chip" id="ppCopyScript">Kopírovať skript (raz na stránku)</button><button type="button" class="chip" id="ppAll">Všetky dekory tohto materiálu (HTML)</button><button type="button" class="chip" id="ppImgs" data-dl-ui>Obrázky pre tento materiál (ZIP)</button><a class="chip" id="ppPreview" href="'+esc(ppBase().app+'?widget=1&'+ppParams(PP.p,PP.m,PP.d))+'" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">Náhľad widgetu ↗</a></div>'

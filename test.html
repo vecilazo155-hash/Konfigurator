@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>WoodPlast konfigurátor – test zobrazenia</title>
+<style>
+body{margin:0;padding:20px;background:#F5F1EB;color:#2D2A26;font:16px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif}
+.in{max-width:980px;margin:0 auto}
+h1{margin:0 0 4px;font-size:26px}
+h2{margin:22px 0 8px;font-size:18px}
+p{margin:0 0 10px}
+.grid{display:-webkit-box;display:flex;flex-wrap:wrap;margin:-6px}
+.tile{width:220px;margin:6px;padding:10px;background:#fff;border:2px solid #E7E2DB;border-radius:12px}
+.tile b{display:block;font-size:15px;margin-top:8px}
+.tile small{display:block;font-size:12.5px;color:#6B6258;word-break:break-all}
+.box{display:block;height:60px;border-radius:7px;overflow:hidden;border:1px dashed #B8BEC4}
+.box img,.box canvas,.box svg{display:block;width:100%;height:100%}
+.box img{object-fit:cover}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #E7E2DB}
+th,td{text-align:left;vertical-align:top;padding:7px 10px;border-bottom:1px solid #E7E2DB;font-size:14px}
+th{width:230px;font-weight:600}
+td{word-break:break-word}
+.ok{color:#2F7A3A;font-weight:700}.bad{color:#9B2C1F;font-weight:700}
+button{font:inherit;font-weight:700;min-height:48px;padding:0 20px;border:0;border-radius:12px;background:#2D2A26;color:#fff;cursor:pointer;margin:16px 0 6px}
+</style>
+</head>
+<body>
+<div class="in">
+<h1>Test zobrazenia vzoriek dekorov</h1>
+<p>Odfoťte prosím <b>celú túto stránku</b> (vzorky aj tabuľku) a pošlite ju. Podľa nej uvidíme, prečo sa na tomto počítači nekreslia farby dosiek.</p>
+
+<h2>1. Vzorky – každá je nakreslená iným spôsobom</h2>
+<div class="grid" id="tiles"></div>
+
+<h2>2. Údaje o prehliadači a stránke</h2>
+<table id="info"><tbody></tbody></table>
+
+<button type="button" id="fresh">Vymazať uloženú kópiu a otvoriť konfigurátor nanovo</button>
+<p id="freshMsg" style="font-size:14px;color:#6B6258">Zmaže len uloženú kópiu konfigurátora v tomto prehliadači (nič iné) a otvorí ho čerstvo zo servera.</p>
+</div>
+
+<script>
+(function(){
+'use strict';
+var C1='#8E6A47', C2='#735437';
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function row(k, v, cls){ var tr=document.createElement('tr'); tr.innerHTML='<th>'+esc(k)+'</th><td'+(cls?' class="'+cls+'"':'')+'>'+v+'</td>'; $('info').tBodies[0].appendChild(tr); return tr.lastChild; }
+function tile(code, name){ var t=document.createElement('div'); t.className='tile'; t.innerHTML='<span class="box"></span><b>'+code+' – '+esc(name)+'</b><small>…</small>'; $('tiles').appendChild(t); return {box:t.firstChild, note:t.lastChild}; }
+function cs(el){ var c=window.getComputedStyle(el); return 'farba: '+c.backgroundColor+' · obrázok: '+String(c.backgroundImage).slice(0,26); }
+function verOf(html){ var m=/name="wp3d-version" content="(\d+)"/.exec(html); return m?m[1]:(html.indexOf('function swBg(')>=0?'133':'132 alebo staršia'); }
+
+/* --- údaje, ktoré netreba sťahovať --- */
+row('Prehliadač', esc(navigator.userAgent));
+row('Adresa', esc(location.href));
+row('Okno', window.innerWidth+' × '+window.innerHeight+' px · hustota '+(window.devicePixelRatio||1)+' · '+new Date().toLocaleString('sk-SK'));
+var cspCell=row('Blokovanie stránkou (CSP)', 'žiadne');
+var cspN=0; document.addEventListener('securitypolicyviolation', function(e){ cspN++; cspCell.className='bad'; cspCell.innerHTML=cspN+'× zablokované: '+esc(e.violatedDirective||e.effectiveDirective||'')+' – '+esc(String(e.blockedURI).slice(0,40)); });
+var extra=[], k, ch=document.documentElement.children;
+for(k=0;k<ch.length;k++){ if(ch[k]!==document.head&&ch[k]!==document.body) extra.push(ch[k].tagName.toLowerCase()+(ch[k].id?'#'+ch[k].id:'')); }
+var styles=document.querySelectorAll('style,link[rel~="stylesheet"]').length;
+row('Štýly vložené navyše', (document.styleSheets.length>1||styles>1||extra.length)?'<span class="bad">áno</span> – štýlov '+document.styleSheets.length+' (má byť 1)'+(extra.length?', prvky navyše: '+esc(extra.join(', ')):'')+' → pravdepodobne rozšírenie prehliadača':'nie (1 štýl)');
+var swCell=row('Uložená kópia (service worker)', '…');
+var cacheCell=row('Verzia v uloženej kópii', '…');
+var srvCell=row('Verzia na serveri', 'sťahujem…');
+var texCell=row('Fotky dekorov v stránke', '…');
+
+/* --- uložená kópia --- */
+try{
+  if(navigator.serviceWorker){ swCell.innerHTML=navigator.serviceWorker.controller?'riadi túto stránku ('+esc(navigator.serviceWorker.controller.scriptURL.split('/').pop())+')':'neriadi túto stránku'; }
+  else swCell.innerHTML='prehliadač ju nepodporuje';
+  if(window.caches&&caches.keys){
+    caches.keys().then(function(keys){ if(!keys.length){ cacheCell.innerHTML='žiadna uložená kópia'; return; }
+      var base=location.href.replace(/test\.html.*$/, '');
+      return caches.match(base+'index.html').then(function(r){ return r||caches.match(base); }).then(function(r){ if(!r){ cacheCell.innerHTML='keš '+esc(keys.join(', '))+' – konfigurátor v nej nie je'; return; }
+        return r.text().then(function(t){ cacheCell.innerHTML='verzia '+esc(verOf(t))+' · '+Math.round(t.length/1024)+' kB · keš '+esc(keys.join(', ')); }); });
+    }).catch(function(e){ cacheCell.innerHTML='nedá sa prečítať ('+esc(e&&e.message||e)+')'; });
+  } else cacheCell.innerHTML='prehliadač keš nepodporuje';
+}catch(e){ swCell.innerHTML='chyba: '+esc(e.message); }
+
+/* --- stiahnutie konfigurátora a fotiek dekorov --- */
+function withTex(tex, why){
+  var A=tile('A','fotka ako pozadie – pôvodný zápis'), B=tile('B','fotka ako pozadie – nový zápis'), Cc=tile('C','fotka ako obrázok'), D=tile('D','len farba (CSS)'),
+      E=tile('E','pruhy (CSS)'), F=tile('F','SVG – farba a fotka'), G=tile('G','SVG – len farba'), H=tile('H','plátno (canvas)');
+  if(!tex){ A.note.textContent=B.note.textContent=Cc.note.textContent=F.note.textContent=H.note.textContent='fotka nie je k dispozícii: '+why; }
+  try{ if(tex){ A.box.style.background='url('+tex+') center/cover'; A.note.textContent=cs(A.box); } }catch(e){ A.note.textContent='chyba: '+e.message; }
+  try{ if(tex){ B.box.style.cssText='background:'+C1+';background-image:url(\''+tex+'\');background-position:center;background-size:cover;background-repeat:no-repeat'; B.note.textContent=cs(B.box); } }catch(e){ B.note.textContent='chyba: '+e.message; }
+  try{ D.box.style.cssText='background:'+C1; D.note.textContent=cs(D.box); }catch(e){ D.note.textContent='chyba: '+e.message; }
+  try{ E.box.style.cssText='background:'+C1+';background-image:repeating-linear-gradient(90deg,'+C1+','+C1+' 12px,'+C2+' 12px,'+C2+' 13px)'; E.note.textContent=cs(E.box); }catch(e){ E.note.textContent='chyba: '+e.message; }
+  try{ G.box.innerHTML='<svg width="100%" height="100%"><rect width="100%" height="100%" fill="'+C1+'"/></svg>'; G.note.textContent='vložené'; }catch(e){ G.note.textContent='chyba: '+e.message; }
+  if(tex){
+    try{ F.box.innerHTML='<svg width="100%" height="100%"><rect width="100%" height="100%" fill="'+C1+'"/><image href="'+tex+'" xlink:href="'+tex+'" width="100%" height="100%" preserveAspectRatio="xMidYMid slice"/></svg>'; F.note.textContent='vložené'; }catch(e){ F.note.textContent='chyba: '+e.message; }
+    var im=new Image();
+    im.onload=function(){ Cc.note.innerHTML='<span class="ok">načítaná</span> '+im.naturalWidth+' × '+im.naturalHeight+' px';
+      try{ var cv=document.createElement('canvas'); cv.width=220; cv.height=60; var g=cv.getContext('2d'); g.drawImage(im, 0, 0, 220, 60); H.box.appendChild(cv); var px=g.getImageData(110,30,1,1).data; H.note.innerHTML='<span class="ok">nakreslené</span> · bod '+px[0]+','+px[1]+','+px[2]; }catch(e){ H.note.innerHTML='<span class="bad">chyba</span>: '+esc(e.message); } };
+    im.onerror=function(){ Cc.note.innerHTML='<span class="bad">prehliadač fotku nenačítal</span>'; H.note.innerHTML='<span class="bad">bez fotky</span>'; };
+    im.alt=''; Cc.box.appendChild(im); im.src=tex;
+  }
+}
+var x=new XMLHttpRequest(), t0=Date.now();
+x.open('GET', 'index.html?test='+t0, true);
+x.onreadystatechange=function(){ if(x.readyState!==4) return;
+  var html=x.responseText||'', tex='', why='';
+  if(x.status<200||x.status>=300||!html){ srvCell.className='bad'; srvCell.innerHTML='konfigurátor sa nepodarilo stiahnuť (stav '+x.status+')'; texCell.innerHTML='–'; withTex('', 'stránka sa nestiahla'); return; }
+  srvCell.innerHTML='verzia '+esc(verOf(html))+' · '+Math.round(html.length/1024)+' kB · '+(Date.now()-t0)+' ms'+(/<\/html>\s*$/.test(html)?'':' · <span class="bad">stránka je neúplná</span>');
+  var i=html.indexOf('id="wpTex">'), j=i<0?-1:html.indexOf('</'+'script>', i);
+  if(i<0||j<0){ why='blok fotiek v stránke chýba'; }
+  else { try{ var T=JSON.parse(html.slice(i+11, j)), n=0, kk; for(kk in T) n++; tex=T.dub||''; texCell.innerHTML=n+' fotiek · Dub '+(tex?Math.round(tex.length/1024)+' kB, začiatok '+esc(tex.slice(0,23)):'chýba'); if(!tex) why='fotka Dub chýba'; }catch(e){ why='blok fotiek sa nedá prečítať ('+e.message+')'; } }
+  if(why){ texCell.className='bad'; texCell.innerHTML=esc(why); }
+  withTex(tex, why);
+};
+x.onerror=function(){ srvCell.className='bad'; srvCell.innerHTML='sieťová chyba pri sťahovaní'; };
+try{ x.send(); }catch(e){ srvCell.className='bad'; srvCell.innerHTML='chyba: '+esc(e.message); withTex('', 'stránka sa nestiahla'); }
+
+/* --- čerstvé otvorenie --- */
+$('fresh').addEventListener('click', function(){
+  var go=function(){ location.href='./?cisto='+Date.now(); }, jobs=[];
+  $('freshMsg').textContent='Mažem uloženú kópiu…';
+  try{ if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations) jobs.push(navigator.serviceWorker.getRegistrations().then(function(rs){ return Promise.all(rs.map(function(r){ return r.unregister(); })); })); }catch(e){}
+  try{ if(window.caches&&caches.keys) jobs.push(caches.keys().then(function(ks){ return Promise.all(ks.map(function(k2){ return caches.delete(k2); })); })); }catch(e){}
+  if(window.Promise&&jobs.length) Promise.all(jobs).then(go, go); else go();
+  setTimeout(go, 4000);
+});
+})();
+</script>
+</body>
+</html>
