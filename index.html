@@ -3902,7 +3902,11 @@ function lnStartSpin(){
   if(three&&three.orbit.phi<0.42) setView('3d');
 }
 /* pozadie vzorky dekoru: fotka z TEX, kým nie je načítaná (alebo chýba), pruhy vo farbách dekoru */
-function decorBg(d){ return TEX[d.id]?'url('+TEX[d.id]+') center/cover':'repeating-linear-gradient(90deg,'+d.c1+' 0 12px,'+d.c2+' 12px 13px)'; }
+/* pozadie vzorky dekoru – hodnota za „background:“ (viac deklarácií, v JS sa preto nastavuje cez cssText): farba dekoru je vždy podklad
+   (vidno ju, aj keď prehliadač fotku nenakreslí), fotka ide zvlášť a v úvodzovkách, náhradné pruhy v zápise, ktorý poznajú aj staršie prehliadače */
+function swBg(tex, c1, c2){ c1=c1||'#B99B72'; c2=c2||c1;
+  return c1+';background-image:'+(tex?"url('"+tex+"')":'repeating-linear-gradient(90deg,'+c1+','+c1+' 12px,'+c2+' 12px,'+c2+' 13px)')+';background-position:center;background-size:'+(tex?'cover':'auto')+';background-repeat:'+(tex?'no-repeat':'repeat'); }
+function decorBg(d){ return swBg(TEX[d.id], d.c1, d.c2); }
 /* pôdorys uloženia na karte (pohľad zhora): ostenie otvoru, os otvoru a tri slnolamy 10 × 5,3 cm natočené o uhol uloženia, s rovnakou mierkou
    a medzerou na všetkých kartách, aby sa dali porovnať; farba dekoru cez --lnwood (renderLouversControls) */
 function lnPicSvg(m){
@@ -4546,7 +4550,7 @@ function renderFacadePanel(){
   if(ks.some(function(k){ return fa.walls[k].o.length>0; })) h+='<div class="sec" data-step="2"><h3>Kladenie okolo okien a dverí</h3>'+seg('fmeth',[['classic','Celá stena'],['inbetween-full-height','Medzi otvormi'],['inbetween-minimal','Len vo výške okien']],fa.method)+'</div>';
   /* krok 3: obklad, farba a smer kladenia */
   /* krok 3: obklad ako karty s cenou za meter dosky (farby sa rozbalia len pri zvolenom obklade), smer kladenia s obrázkom */
-  var sws='<div class="swatches" role="group" aria-label="Farba obkladu">'+M.colors.map(function(c){ var C=FA_COL[c], tk=fa.mat==='wpc'?(TEX[FA2DEC[c]]?FA2DEC[c]:null):(M.perPiece?(TEX[c]?c:null):lamTexKey(fa.mat,c)); return '<button type="button" class="sw" data-fcol="'+c+'" aria-pressed="'+(c===fa.color)+'"><i style="background:'+(tk?'url('+TEX[tk]+') center/cover':'repeating-linear-gradient(90deg,'+C[1]+' 0 12px,rgba(0,0,0,.18) 12px 13px)')+'"></i><span>'+C[0]+'</span></button>'; }).join('')+'</div>';
+  var sws='<div class="swatches" role="group" aria-label="Farba obkladu">'+M.colors.map(function(c){ var C=FA_COL[c], tk=fa.mat==='wpc'?(TEX[FA2DEC[c]]?FA2DEC[c]:null):(M.perPiece?(TEX[c]?c:null):lamTexKey(fa.mat,c)); return '<button type="button" class="sw" data-fcol="'+c+'" aria-pressed="'+(c===fa.color)+'"><i style="background:'+swBg(tk?TEX[tk]:'', C[1], 'rgba(0,0,0,.18)')+'"></i><span>'+C[0]+'</span></button>'; }).join('')+'</div>';
   h+=stepHead(3)+'<div class="sec" data-step="3"><h3>Obklad a farba</h3><div class="opts" role="group" aria-label="Obklad">'
     +Object.keys(FA_MAT).map(function(k){ var F=FA_MAT[k], on=k===fa.mat;
       return '<button type="button" class="opt optc optm" data-fmat="'+k+'" aria-pressed="'+on+'"><span class="ot"><b>'+F.label+'</b><small>'+FA_MAT_TXT[k]+' · '+F.colors.length+' '+lnPl(F.colors.length,'farba','farby','farieb')+'</small></span><span class="ov"><b>'+eur(Math.round(faBmPrice(F)*100)/100)+'</b><small>za meter dosky</small></span></button>'+(on?sws:''); }).join('')+'</div>'
@@ -4679,7 +4683,7 @@ function inTabs(){ var cur=inWallCur();
   return '<div class="seg walltabs" role="group" aria-label="Stena">'+inWallKeys().map(function(k){ return '<button type="button" data-iwtab="'+k+'" aria-pressed="'+(k===cur)+'"><b>Stena '+k.toUpperCase()+'</b><small>'+esc(inTabVal(k))+'</small></button>'; }).join('')+'</div>'; }
 /* najnižšia cena panela materiálu (karta „od 62,00 € za panel“) */
 function inMinPrice(M){ return M.decors.reduce(function(a,d){ return Math.min(a,d.price); }, Infinity); }
-function inSwBg(d){ return TEX[d.id]?'url('+TEX[d.id]+') center/cover':'linear-gradient(135deg,'+d.c1+','+d.c2+')'; }
+function inSwBg(d){ return TEX[d.id]?swBg(TEX[d.id], d.c1, d.c2):(d.c1||'#B99B72')+';background-image:linear-gradient(135deg,'+d.c1+','+d.c2+')'; }
 function renderInteriorPanel(){
   var box=$('interiorPanel'); if(!box||editingIn(box)) return;
   var M=inMat(), D=inDecor(), h='', seg=function(attr, items, cur, lbl){ return '<div class="seg" role="group"'+(lbl?' aria-label="'+lbl+'"':'')+'>'+items.map(function(it){ return '<button type="button" data-'+attr+'="'+it[0]+'" aria-pressed="'+(it[0]===cur)+'">'+it[1]+'</button>'; }).join('')+'</div>'; };
@@ -5542,7 +5546,7 @@ function swatchRender(){
   var big=cur.tex?'<div class="swbig" style="background-image:url('+cur.tex+')"></div>':'<div class="swbig" style="background:'+cur.c1+'"></div>';
   var h='<div class="swtop">'+big+(photo?'<div class="swreal"><img src="'+photo+'" alt="Realizácia WoodPlast – '+esc(PROD_NAMES[state.product]||'')+'"><small>Realizácia WoodPlast · '+esc(PROD_NAMES[state.product]||'')+'</small></div>':'')+'</div>';
   h+='<h2 class="swname">'+esc(cur.name)+'</h2><p class="note">'+esc(D.mat)+' · '+esc(D.dims)+'. Fotka dekoru je v mierke makra – skutočná farba závisí od svetla a šarže; vzorku vám pošleme.</p><p><button type="button" class="cta" data-samples-go="1">Objednať vzorky zdarma</button></p>';
-  h+='<div class="swstrip" role="group" aria-label="Dekory">'+D.list.map(function(d){ return '<button type="button" class="sw" data-swdec="'+esc(d.id)+'" aria-pressed="'+(d.id===cur.id)+'"><i style="background:'+(d.tex?'url('+d.tex+') center/cover':d.c1)+'"></i><span>'+esc(d.name)+'</span></button>'; }).join('')+'</div>';
+  h+='<div class="swstrip" role="group" aria-label="Dekory">'+D.list.map(function(d){ return '<button type="button" class="sw" data-swdec="'+esc(d.id)+'" aria-pressed="'+(d.id===cur.id)+'"><i style="background:'+swBg(d.tex, d.c1, d.c1)+'"></i><span>'+esc(d.name)+'</span></button>'; }).join('')+'</div>';
   box.innerHTML=h;
   box.querySelectorAll('[data-swdec]').forEach(function(b){ b.addEventListener('click',function(){ D.set(b.dataset.swdec); swatchRender(); }); });
 }
@@ -6130,7 +6134,7 @@ function samplesRender(){
   var box=$('askSamplesBox'), c=$('askSamples'); if(!box||!c) return; box.hidden=!c.checked; if(!c.checked) return;
   var D=decorList(); if(!SAMPLES.length&&D.cur) SAMPLES=[D.cur]; SAMPLES=SAMPLES.filter(function(id){ return D.list.some(function(d){ return d.id===id; }); });
   box.innerHTML='<p class="moreh" style="margin-top:0">Vyberte až '+SAMPLES_MAX+' dekory ('+esc(D.mat)+') – pošleme vám ich poštou zdarma</p><div class="swstrip sm" role="group" aria-label="Vzorky">'
-    +D.list.map(function(d){ var on=SAMPLES.indexOf(d.id)>=0; return '<button type="button" class="sw" data-sample="'+esc(d.id)+'" aria-pressed="'+on+'"><i style="background:'+(d.tex?'url('+d.tex+') center/cover':d.c1)+'"></i><span>'+esc(d.name)+'</span></button>'; }).join('')+'</div>'
+    +D.list.map(function(d){ var on=SAMPLES.indexOf(d.id)>=0; return '<button type="button" class="sw" data-sample="'+esc(d.id)+'" aria-pressed="'+on+'"><i style="background:'+swBg(d.tex, d.c1, d.c1)+'"></i><span>'+esc(d.name)+'</span></button>'; }).join('')+'</div>'
     +'<p class="note" id="askSamplesNote" style="margin:4px 0 0">'+(SAMPLES.length?'Vybrané: '+esc(samplesList().map(function(s){ return s.name; }).join(', ')):'Vyberte aspoň jeden dekor.')+'</p>';
 }
 function samplesOrder(){ var c=$('askSamples'); if(!c) return; askShow(); c.checked=true; samplesRender(); var b=$('askSamplesBox'); if(b){ b.scrollIntoView({block:'center'}); } }
@@ -8484,7 +8488,7 @@ function renderControls(){
   keepFocus(dc, function(){ dc.innerHTML='';
   matColors().forEach(function(d){
     var b=document.createElement('button'); b.type='button'; b.className='sw'; b.dataset.decor=d.id; b.setAttribute('aria-pressed', String(d.id===state.decor));
-    var i=document.createElement('i'); i.style.background=decorBg(d);
+    var i=document.createElement('i'); i.style.cssText='background:'+decorBg(d);
     var s=document.createElement('span'); s.textContent=d.name;
     b.appendChild(i); b.appendChild(s);
     b.addEventListener('click',function(){ state.decor=d.id; TER_DECPREF=d.id; update(); });
@@ -9198,7 +9202,7 @@ function texLoad(){ var el=document.getElementById('wpTex'), t; if(!el||!el.text
 /* po načítaní fotiek: vzorky a 3D s fotkami namiesto farebnej náhrady (náhradné textúry z keše vypadnú, clearGroup ich uvoľní) */
 function texReady(){
   if(three) three.texCache={};
-  LN_DECORS.forEach(function(d){ var i=document.querySelector('[data-ldec="'+d.id+'"] i'); if(i) i.style.background=decorBg(d); });
+  LN_DECORS.forEach(function(d){ var i=document.querySelector('[data-ldec="'+d.id+'"] i'); if(i) i.style.cssText='background:'+decorBg(d); });
   if(!document.querySelector('.main').hidden){ renderControls(); if(three&&last) build3D(last); }
 }
 function initThree(){
